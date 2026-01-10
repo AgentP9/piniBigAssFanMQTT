@@ -21,7 +21,7 @@ This repository implements a complete MQTT bridge for BigAssFan Haiku fans, prov
 
 **Features:**
 - RESTful API for fan control
-- SenseMe protocol client for TCP communication (port 31415)
+- SenseMe protocol client for UDP communication (port 31415)
 - MQTT state publishing
 - Background polling of fan states
 - Environment-based configuration
@@ -93,14 +93,18 @@ This repository implements a complete MQTT bridge for BigAssFan Haiku fans, prov
 ## Technical Specifications
 
 ### SenseMe Protocol
-- **Port:** 31415 (TCP)
-- **Format:** Commands wrapped in angle brackets: `<command>`
-- **Response:** Parentheses-wrapped semicolon-delimited values
+- **Port:** 31415 (UDP)
+- **Format:** Commands wrapped in angle brackets: `<FanName;COMMAND;PARAMETERS>`
+- **Response:** Parentheses-wrapped semicolon-delimited values: `(FanName;COMMAND;PARAMETERS)`
+- **Discovery:** Broadcast `<ALL;DEVICE;ID;GET>` to discover fan name
 
 **Example:**
 ```
-Send: <Device;Power;GET>
-Receive: (Device;Power;VALUE;ON)
+Send: <Master Bedroom;FAN;PWR;GET;ACTUAL>
+Receive: (Master Bedroom;FAN;PWR;OFF)
+
+Send: <Master Bedroom;FAN;PWR;ON>
+Receive: (Master Bedroom;FAN;PWR;ON)
 ```
 
 ### Environment Variables
@@ -135,12 +139,12 @@ Receive: (Device;Power;VALUE;ON)
 ┌─────────────────────────────────────────────────┐
 │        FastAPI (Backend Container)              │
 │  - REST API endpoints                           │
-│  - SenseMe protocol client                      │
+│  - SenseMe protocol client (UDP)                │
 │  - MQTT publisher                               │
 │  - Background state polling                     │
 └────────┬──────────────────────────┬─────────────┘
          │                          │
-         │ TCP :31415              │ MQTT :1883
+         │ UDP :31415              │ MQTT :1883
          ▼                          ▼
 ┌──────────────────┐    ┌─────────────────────────┐
 │   Haiku Fan      │    │  Mosquitto (MQTT)       │
