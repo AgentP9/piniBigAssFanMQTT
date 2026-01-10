@@ -18,8 +18,6 @@ services:
     networks:
       - haiku-network
     restart: unless-stopped
-    depends_on:
-      - mosquitto
 
   frontend:
     build:
