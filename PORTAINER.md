@@ -215,38 +215,43 @@ Make sure these ports are not in use by other services.
 
 ### Config File Mount Errors
 
-**Symptom**: Error like "not a directory: Are you trying to mount a directory onto a file (or vice-versa)?"
+**Symptom**: Error like "bind source path does not exist: /data/compose/55/mosquitto.conf" or "not a directory: Are you trying to mount a directory onto a file (or vice-versa)?"
 
-**Cause**: This typically occurs with direct file bind mounts when deploying from Git repositories.
+**Cause**: This typically occurs when deploying from Git repositories in Portainer, where the config file path cannot be resolved.
 
 **Solution**: 
-The project now uses Docker configs instead of bind mounts for the mosquitto.conf file, which resolves this issue. If you're experiencing this error:
+The project now uses Docker configs with inline content instead of file references for the mosquitto.conf configuration. This completely eliminates file path dependencies. If you're experiencing this error:
 1. Ensure you're using the latest version of docker-compose.yml
-2. Check that the `configs` section is present in your stack configuration
+2. Check that the `configs` section uses `content:` with inline configuration instead of `file:` reference
 3. Verify the mosquitto service uses `configs` instead of a volume mount for mosquitto.conf
 
 ## Advanced Configuration
 
 ### Custom MQTT Configuration
 
-The mosquitto configuration is managed using Docker configs, which provides better compatibility with Portainer deployments.
+The mosquitto configuration is embedded directly in the docker-compose.yml file using inline Docker configs, which provides maximum compatibility with Portainer deployments and eliminates all file path dependencies.
 
 To modify mosquitto configuration:
 
-**Option 1: Modify in Repository (Recommended)**
-1. Edit the `mosquitto.conf` file in the repository
-2. Commit and push changes (or pull and redeploy if using Git repository method in Portainer)
-
-**Option 2: Use Custom Config File**
-1. In Portainer, go to your stack editor
-2. Modify the `configs` section to point to your custom file:
+**Option 1: Edit Stack in Portainer (Recommended)**
+1. In Portainer, go to your stack
+2. Click "Editor"
+3. Modify the `configs` section with your custom configuration:
    ```yaml
    configs:
      mosquitto_config:
-       file: /path/to/your/custom/mosquitto.conf
+       content: |
+         listener 1883
+         allow_anonymous true
+         # Add your custom configuration here
    ```
+4. Click "Update the stack"
 
-Note: The default configuration uses Docker configs instead of volume mounts to avoid file/directory mount conflicts during deployment.
+**Option 2: Modify in Repository**
+1. Edit the `configs` section in `docker-compose.yml` in the repository
+2. Commit and push changes (or pull and redeploy if using Git repository method in Portainer)
+
+Note: The default configuration uses inline Docker configs instead of file references to completely avoid file/directory mount conflicts during deployment.
 
 ### SSL/TLS Configuration
 
