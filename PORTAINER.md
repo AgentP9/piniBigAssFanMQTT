@@ -213,17 +213,40 @@ Make sure these ports are not in use by other services.
 1. Ensure Portainer has permissions to create volumes
 2. Check volume configuration in stack settings
 
+### Config File Mount Errors
+
+**Symptom**: Error like "not a directory: Are you trying to mount a directory onto a file (or vice-versa)?"
+
+**Cause**: This typically occurs with direct file bind mounts when deploying from Git repositories.
+
+**Solution**: 
+The project now uses Docker configs instead of bind mounts for the mosquitto.conf file, which resolves this issue. If you're experiencing this error:
+1. Ensure you're using the latest version of docker-compose.yml
+2. Check that the `configs` section is present in your stack configuration
+3. Verify the mosquitto service uses `configs` instead of a volume mount for mosquitto.conf
+
 ## Advanced Configuration
 
 ### Custom MQTT Configuration
 
+The mosquitto configuration is managed using Docker configs, which provides better compatibility with Portainer deployments.
+
 To modify mosquitto configuration:
-1. Create a custom `mosquitto.conf` file
-2. Update the stack to mount your custom config:
+
+**Option 1: Modify in Repository (Recommended)**
+1. Edit the `mosquitto.conf` file in the repository
+2. Commit and push changes (or pull and redeploy if using Git repository method in Portainer)
+
+**Option 2: Use Custom Config File**
+1. In Portainer, go to your stack editor
+2. Modify the `configs` section to point to your custom file:
    ```yaml
-   volumes:
-     - /path/to/your/mosquitto.conf:/mosquitto/config/mosquitto.conf
+   configs:
+     mosquitto_config:
+       file: /path/to/your/custom/mosquitto.conf
    ```
+
+Note: The default configuration uses Docker configs instead of volume mounts to avoid file/directory mount conflicts during deployment.
 
 ### SSL/TLS Configuration
 
