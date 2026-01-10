@@ -9,7 +9,7 @@ This project provides a REST API and MQTT bridge for BigAssFan Haiku fans using 
 ## Features
 
 - **REST API**: FastAPI-based REST API for fan control
-- **MQTT Integration**: Publishes fan states to MQTT broker
+- **MQTT Integration** (Optional): Publishes fan states to MQTT broker when configured
 - **Web Interface**: Simple web UI for controlling the fan (accessible on port 1919)
 - **Docker Support**: Easy deployment with Docker Compose
 - **Environment Configuration**: Configure via environment variables (Portainer compatible)
@@ -26,7 +26,7 @@ This project provides a REST API and MQTT bridge for BigAssFan Haiku fans using 
 
 - **Backend**: Python FastAPI application that communicates with the Haiku fan using the SenseMe protocol
 - **Frontend**: Single-page HTML/JavaScript application
-- **MQTT Broker**: Eclipse Mosquitto for MQTT messaging
+- **MQTT Broker** (Optional): Eclipse Mosquitto for MQTT messaging - can be disabled by not setting MQTT_BROKER
 - **Nginx**: Reverse proxy serving frontend and routing API requests
 
 ## Quick Start
@@ -47,6 +47,7 @@ This project provides a REST API and MQTT bridge for BigAssFan Haiku fans using 
 3. Edit `.env` and set your fan's IP address:
    ```
    FAN_IP=192.168.1.100  # Replace with your fan's IP
+   MQTT_BROKER=mosquitto  # Or leave empty to disable MQTT
    ```
 
 4. Start the services:
@@ -55,6 +56,20 @@ This project provides a REST API and MQTT bridge for BigAssFan Haiku fans using 
    ```
 
 5. Access the web interface at: `http://localhost:1919`
+
+### Running Without MQTT
+
+To run the system without MQTT integration:
+
+1. Set `MQTT_BROKER` to an empty string in your `.env` file:
+   ```
+   FAN_IP=192.168.1.100
+   MQTT_BROKER=
+   ```
+
+2. The backend will start without MQTT publishing, and you can use the REST API and web interface normally.
+
+3. If using Docker Compose, you can also comment out the `mosquitto` service if not needed.
 
 ### Manual Setup
 
@@ -83,9 +98,11 @@ This project provides a REST API and MQTT bridge for BigAssFan Haiku fans using 
 Configure these variables in your `.env` file or through Portainer:
 
 - `FAN_IP`: IP address of your Haiku fan (default: 192.168.1.100)
-- `MQTT_BROKER`: MQTT broker hostname (default: mosquitto)
+- `MQTT_BROKER`: MQTT broker hostname (optional - leave empty to disable MQTT; default: mosquitto)
 - `MQTT_PORT`: MQTT broker port (default: 1883)
 - `POLL_INTERVAL`: How often to poll fan state in seconds (default: 30)
+
+**Note**: If `MQTT_BROKER` is not set or is empty, the system will operate without MQTT publishing. The REST API and web interface will continue to function normally.
 
 ## API Endpoints
 
