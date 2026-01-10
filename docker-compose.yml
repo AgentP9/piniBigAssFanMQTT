@@ -13,8 +13,6 @@ services:
       - MQTT_USER=${MQTT_USER:-mqtt}
       - MQTT_PASS=${MQTT_PASS:-word}
       - POLL_INTERVAL=${POLL_INTERVAL:-30}
-    ports:
-      - "8000:8000"
     networks:
       - haiku-network
     restart: unless-stopped
