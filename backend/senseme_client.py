@@ -4,7 +4,6 @@ Based on: https://bruce.pennypacker.org/2015/07/17/hacking-bigass-fans-with-sens
 """
 import socket
 import threading
-import time
 from typing import Optional, Dict, Any
 import logging
 

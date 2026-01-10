@@ -42,7 +42,7 @@ polling_active = False
 
 def poll_fan_states():
     """Background task to poll fan states and publish to MQTT."""
-    global fan_states, polling_active
+    global fan_states
     
     logger.info("Starting fan state polling thread")
     while polling_active:
