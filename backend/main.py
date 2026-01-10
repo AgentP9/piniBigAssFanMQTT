@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 # Configuration from environment variables
 FAN_IP = os.getenv("FAN_IP", "192.168.1.100")
-MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
+MQTT_BROKER = os.getenv("MQTT_BROKER", "")  # Empty string means MQTT disabled
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "30"))
 
@@ -71,16 +71,20 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting Haiku Fan MQTT Bridge")
     logger.info(f"Fan IP: {FAN_IP}")
-    logger.info(f"MQTT Broker: {MQTT_BROKER}:{MQTT_PORT}")
     
     # Initialize SenseMe client
     senseme_client = SenseMeClient(FAN_IP)
     if not senseme_client.connect():
         logger.warning("Failed to connect to fan on startup")
     
-    # Initialize MQTT publisher
-    mqtt_publisher = MQTTPublisher(MQTT_BROKER, MQTT_PORT)
-    mqtt_publisher.connect()
+    # Initialize MQTT publisher only if broker is configured
+    if MQTT_BROKER:
+        logger.info(f"MQTT Broker: {MQTT_BROKER}:{MQTT_PORT}")
+        mqtt_publisher = MQTTPublisher(MQTT_BROKER, MQTT_PORT)
+        mqtt_publisher.connect()
+    else:
+        logger.info("MQTT Broker not configured - MQTT publishing disabled")
+        mqtt_publisher = None
     
     # Start polling thread
     polling_active = True
@@ -192,7 +196,7 @@ async def set_fan_power(request: PowerRequest):
     if senseme_client.set_fan_power(request.state):
         # Update state immediately
         time.sleep(0.5)
-        if mqtt_publisher:
+        if mqtt_publisher and mqtt_publisher.connected:
             power = senseme_client.get_fan_power()
             mqtt_publisher.publish_state("power", power)
         return {"success": True, "power": request.state}
@@ -222,7 +226,7 @@ async def set_fan_speed(request: SpeedRequest):
     if senseme_client.set_fan_speed(request.speed):
         # Update state immediately
         time.sleep(0.5)
-        if mqtt_publisher:
+        if mqtt_publisher and mqtt_publisher.connected:
             speed = senseme_client.get_fan_speed()
             mqtt_publisher.publish_state("speed", speed)
         return {"success": True, "speed": request.speed}
@@ -252,7 +256,7 @@ async def set_fan_whoosh(request: WhooshRequest):
     if senseme_client.set_fan_whoosh(request.state):
         # Update state immediately
         time.sleep(0.5)
-        if mqtt_publisher:
+        if mqtt_publisher and mqtt_publisher.connected:
             whoosh = senseme_client.get_fan_whoosh()
             mqtt_publisher.publish_state("whoosh", whoosh)
         return {"success": True, "whoosh": request.state}
@@ -282,7 +286,7 @@ async def set_light_power(request: LightPowerRequest):
     if senseme_client.set_light_power(request.state):
         # Update state immediately
         time.sleep(0.5)
-        if mqtt_publisher:
+        if mqtt_publisher and mqtt_publisher.connected:
             power = senseme_client.get_light_power()
             mqtt_publisher.publish_state("light_power", power)
         return {"success": True, "power": request.state}
@@ -312,7 +316,7 @@ async def set_light_level(request: LightLevelRequest):
     if senseme_client.set_light_level(request.level):
         # Update state immediately
         time.sleep(0.5)
-        if mqtt_publisher:
+        if mqtt_publisher and mqtt_publisher.connected:
             level = senseme_client.get_light_level()
             mqtt_publisher.publish_state("light_level", level)
         return {"success": True, "level": request.level}
