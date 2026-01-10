@@ -41,7 +41,9 @@ services:
     volumes:
       - mosquitto-data:/mosquitto/data
       - mosquitto-logs:/mosquitto/log
-      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+    configs:
+      - source: mosquitto_config
+        target: /mosquitto/config/mosquitto.conf
     networks:
       - haiku-network
     restart: unless-stopped
@@ -53,3 +55,7 @@ networks:
 volumes:
   mosquitto-data:
   mosquitto-logs:
+
+configs:
+  mosquitto_config:
+    file: ./mosquitto.conf
