@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Haiku Fan Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .status {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .status-item {
+            text-align: center;
+        }
+
+        .status-label {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .status-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-indicator.connected {
+            background: #28a745;
+        }
+
+        .status-indicator.disconnected {
+            background: #dc3545;
+        }
+
+        .control-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .control-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button.primary {
+            background: #667eea;
+            color: white;
+        }
+
+        button.primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button.secondary {
+            background: #e9ecef;
+            color: #333;
+        }
+
+        button.secondary:hover {
+            background: #dee2e6;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #dee2e6;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+
+        .slider-value {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .fan-name {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #e7f3ff;
+            border-radius: 8px;
+            color: #0066cc;
+            font-weight: 500;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌀 Haiku Fan Control</h1>
+        <p class="subtitle">BigAssFan MQTT Bridge</p>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <div class="status">
+            <div class="status-item">
+                <div class="status-label">Fan Connection</div>
+                <div class="status-value">
+                    <span class="status-indicator" id="fanStatus"></span>
+                    <span id="fanStatusText">-</span>
+                </div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">MQTT Connection</div>
+                <div class="status-value">
+                    <span class="status-indicator" id="mqttStatus"></span>
+                    <span id="mqttStatusText">-</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="fan-name" id="fanName">Loading fan name...</div>
+
+        <!-- Fan Controls -->
+        <div class="control-section">
+            <h2>Fan Control</h2>
+            
+            <div class="control-group">
+                <label>Power</label>
+                <div class="button-group">
+                    <button class="primary" onclick="setFanPower('ON')">Turn On</button>
+                    <button class="secondary" onclick="setFanPower('OFF')">Turn Off</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Speed</label>
+                <input type="range" id="fanSpeed" min="0" max="7" value="0" onchange="setFanSpeed(this.value)">
+                <div class="slider-value"><span id="fanSpeedValue">0</span> / 7</div>
+            </div>
+
+            <div class="control-group">
+                <label>Whoosh Mode</label>
+                <div class="button-group">
+                    <button class="primary" onclick="setWhoosh('ON')">Enable</button>
+                    <button class="secondary" onclick="setWhoosh('OFF')">Disable</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Light Controls -->
+        <div class="control-section">
+            <h2>Light Control</h2>
+            
+            <div class="control-group">
+                <label>Power</label>
+                <div class="button-group">
+                    <button class="primary" onclick="setLightPower('ON')">Turn On</button>
+                    <button class="secondary" onclick="setLightPower('OFF')">Turn Off</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Brightness</label>
+                <input type="range" id="lightLevel" min="0" max="16" value="0" onchange="setLightLevel(this.value)">
+                <div class="slider-value"><span id="lightLevelValue">0</span> / 16</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let updateInterval;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            checkHealth();
+            updateState();
+            updateInterval = setInterval(updateState, 5000);
+        });
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/../health`);
+                const data = await response.json();
+                
+                const fanStatus = document.getElementById('fanStatus');
+                const fanStatusText = document.getElementById('fanStatusText');
+                const mqttStatus = document.getElementById('mqttStatus');
+                const mqttStatusText = document.getElementById('mqttStatusText');
+
+                if (data.fan_connected) {
+                    fanStatus.className = 'status-indicator connected';
+                    fanStatusText.textContent = 'Connected';
+                } else {
+                    fanStatus.className = 'status-indicator disconnected';
+                    fanStatusText.textContent = 'Disconnected';
+                }
+
+                if (data.mqtt_connected) {
+                    mqttStatus.className = 'status-indicator connected';
+                    mqttStatusText.textContent = 'Connected';
+                } else {
+                    mqttStatus.className = 'status-indicator disconnected';
+                    mqttStatusText.textContent = 'Disconnected';
+                }
+            } catch (error) {
+                console.error('Health check failed:', error);
+            }
+        }
+
+        async function updateState() {
+            try {
+                const response = await fetch(`${API_BASE}/fan/state`);
+                const state = await response.json();
+
+                // Update fan name
+                if (state.name) {
+                    document.getElementById('fanName').textContent = `Fan: ${state.name}`;
+                }
+
+                // Update fan speed slider
+                if (state.speed !== null && state.speed !== undefined) {
+                    document.getElementById('fanSpeed').value = state.speed;
+                    document.getElementById('fanSpeedValue').textContent = state.speed;
+                }
+
+                // Update light level slider
+                if (state.light_level !== null && state.light_level !== undefined) {
+                    document.getElementById('lightLevel').value = state.light_level;
+                    document.getElementById('lightLevelValue').textContent = state.light_level;
+                }
+
+                // Update health status
+                checkHealth();
+            } catch (error) {
+                console.error('Failed to update state:', error);
+            }
+        }
+
+        async function setFanPower(state) {
+            try {
+                const response = await fetch(`${API_BASE}/fan/power`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ state: state })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to set fan power');
+                }
+
+                setTimeout(updateState, 500);
+            } catch (error) {
+                showError('Failed to set fan power: ' + error.message);
+            }
+        }
+
+        async function setFanSpeed(speed) {
+            document.getElementById('fanSpeedValue').textContent = speed;
+            
+            try {
+                const response = await fetch(`${API_BASE}/fan/speed`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ speed: parseInt(speed) })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to set fan speed');
+                }
+
+                setTimeout(updateState, 500);
+            } catch (error) {
+                showError('Failed to set fan speed: ' + error.message);
+            }
+        }
+
+        async function setWhoosh(state) {
+            try {
+                const response = await fetch(`${API_BASE}/fan/whoosh`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ state: state })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to set whoosh mode');
+                }
+
+                setTimeout(updateState, 500);
+            } catch (error) {
+                showError('Failed to set whoosh mode: ' + error.message);
+            }
+        }
+
+        async function setLightPower(state) {
+            try {
+                const response = await fetch(`${API_BASE}/light/power`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ state: state })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to set light power');
+                }
+
+                setTimeout(updateState, 500);
+            } catch (error) {
+                showError('Failed to set light power: ' + error.message);
+            }
+        }
+
+        async function setLightLevel(level) {
+            document.getElementById('lightLevelValue').textContent = level;
+            
+            try {
+                const response = await fetch(`${API_BASE}/light/level`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ level: parseInt(level) })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to set light level');
+                }
+
+                setTimeout(updateState, 500);
+            } catch (error) {
+                showError('Failed to set light level: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
