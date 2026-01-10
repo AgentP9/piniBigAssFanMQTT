@@ -50,8 +50,9 @@ This repository implements a complete MQTT bridge for BigAssFan Haiku fans, prov
 - Error handling and user feedback
 
 ### 3. MQTT Integration
-**Files:**
-- `mosquitto.conf` - MQTT broker configuration
+**Configuration:**
+- MQTT broker configuration is embedded inline in `docker-compose.yml`
+- Uses Docker configs with inline content for maximum portability
 
 **MQTT Topics:**
 - `haiku_fan/name` - Fan name
@@ -73,7 +74,7 @@ This repository implements a complete MQTT bridge for BigAssFan Haiku fans, prov
 **Services:**
 - `backend` - Python FastAPI application (port 8000)
 - `frontend` - Nginx web server (port 1919)
-- `mosquitto` - Eclipse Mosquitto MQTT broker (ports 1883, 9001)
+- `mosquitto` - Eclipse Mosquitto MQTT broker (ports 1883, 9001) with inline configuration
 
 ### 5. Documentation
 **Files:**
@@ -183,7 +184,7 @@ Receive: (Device;Power;VALUE;ON)
 - **Total Lines:** ~2,295
 - **Python Files:** 3 (main.py, senseme_client.py, mqtt_client.py)
 - **Frontend Files:** 1 (index.html)
-- **Configuration Files:** 4 (docker-compose.yml, nginx.conf, mosquitto.conf, etc.)
+- **Configuration Files:** 3 (docker-compose.yml with inline MQTT config, nginx.conf, mosquitto.conf)
 - **Documentation Files:** 5 (README, API, TESTING, PORTAINER, this summary)
 
 ## Testing

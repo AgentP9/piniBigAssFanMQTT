@@ -47,6 +47,7 @@ services:
     networks:
       - haiku-network
     restart: unless-stopped
+    command: mosquitto -c /mosquitto/config/mosquitto.conf
 
 networks:
   haiku-network:
@@ -58,4 +59,10 @@ volumes:
 
 configs:
   mosquitto_config:
-    file: ./mosquitto.conf
+    content: |
+      listener 1883
+      allow_anonymous true
+      persistence true
+      persistence_location /mosquitto/data/
+      log_dest file /mosquitto/log/mosquitto.log
+      log_dest stdout
