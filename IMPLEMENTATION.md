@@ -111,6 +111,7 @@ Receive: (Master Bedroom;FAN;PWR;ON)
 | Variable | Description | Default |
 |----------|-------------|---------|
 | FAN_IP | Haiku fan IP address | 192.168.1.100 |
+| FAN_NAME | Fan name (optional, auto-discovered if empty) | (empty) |
 | MQTT_BROKER | MQTT broker hostname | mosquitto |
 | MQTT_PORT | MQTT broker port | 1883 |
 | POLL_INTERVAL | State polling interval (seconds) | 30 |

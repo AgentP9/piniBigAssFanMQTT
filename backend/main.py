@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 # Configuration from environment variables
 FAN_IP = os.getenv("FAN_IP", "192.168.1.100")
+FAN_NAME = os.getenv("FAN_NAME", "")  # Optional: Fan name, will be discovered if not set
 MQTT_BROKER = os.getenv("MQTT_BROKER", "")  # Empty string means MQTT disabled
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "30"))
@@ -71,9 +72,11 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting Haiku Fan MQTT Bridge")
     logger.info(f"Fan IP: {FAN_IP}")
+    if FAN_NAME:
+        logger.info(f"Fan Name: {FAN_NAME}")
     
     # Initialize SenseMe client
-    senseme_client = SenseMeClient(FAN_IP)
+    senseme_client = SenseMeClient(FAN_IP, fan_name=FAN_NAME if FAN_NAME else None)
     if not senseme_client.connect():
         logger.warning("Failed to connect to fan on startup")
     

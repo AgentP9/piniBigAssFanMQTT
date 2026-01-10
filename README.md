@@ -98,6 +98,7 @@ To run the system without MQTT integration:
 Configure these variables in your `.env` file or through Portainer:
 
 - `FAN_IP`: IP address of your Haiku fan (default: 192.168.1.100)
+- `FAN_NAME`: Fan name (optional - leave empty to auto-discover; example: "Master Bedroom")
 - `MQTT_BROKER`: MQTT broker hostname (optional - leave empty to disable MQTT; default: mosquitto)
 - `MQTT_PORT`: MQTT broker port (default: 1883)
 - `POLL_INTERVAL`: How often to poll fan state in seconds (default: 30)

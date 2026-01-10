@@ -17,13 +17,13 @@ logger = logging.getLogger(__name__)
 class SenseMeClient:
     """Client for communicating with BigAssFan Haiku fans using the SenseMe protocol."""
     
-    def __init__(self, fan_ip: str, port: int = 31415):
+    def __init__(self, fan_ip: str, port: int = 31415, fan_name: Optional[str] = None):
         self.fan_ip = fan_ip
         self.port = port
         self.socket: Optional[socket.socket] = None
         self.connected = False
         self._lock = threading.Lock()
-        self.fan_name: Optional[str] = None
+        self.fan_name: Optional[str] = fan_name  # Can be pre-configured or discovered
         
     def connect(self) -> bool:
         """Establish UDP socket for the fan."""
@@ -34,13 +34,16 @@ class SenseMeClient:
             self.connected = True
             logger.info(f"Created UDP socket for fan at {self.fan_ip}:{self.port}")
             
-            # Try to get the fan name
-            self.fan_name = self._discover_fan_name()
-            if self.fan_name:
-                logger.info(f"Discovered fan name: {self.fan_name}")
+            # Try to get the fan name if not already provided
+            if not self.fan_name:
+                self.fan_name = self._discover_fan_name()
+                if self.fan_name:
+                    logger.info(f"Discovered fan name: {self.fan_name}")
+                else:
+                    logger.warning("Could not discover fan name, will use empty name in commands")
+                    self.fan_name = ""
             else:
-                logger.warning("Could not discover fan name, will use empty name in commands")
-                self.fan_name = ""
+                logger.info(f"Using configured fan name: {self.fan_name}")
             
             return True
         except Exception as e:
