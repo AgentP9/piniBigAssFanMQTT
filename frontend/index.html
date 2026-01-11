@@ -260,7 +260,8 @@
             height: 50px;
             background: #667eea;
             border-radius: 2px;
-            /* Knob radius (75px) minus indicator top (15px) = 60px from indicator top to center */
+            /* Distance from indicator top to knob center: 
+               Knob height (150px) / 2 - indicator top (15px) = 60px */
             transform-origin: center 60px;
             transition: transform 0.1s ease;
         }
@@ -487,8 +488,15 @@
                 const dx = clientX - centerX;
                 const dy = clientY - centerY;
                 
+                // Calculate angle in degrees (returns -180 to 180)
                 let angle = Math.atan2(dy, dx) * RADIANS_TO_DEGREES;
+                // Convert from standard mathematical angle (0° = right) to UI angle (0° = top)
                 angle = angle + INDICATOR_OFFSET_DEGREES;
+                
+                // Normalize angle to -180 to 180 range
+                if (angle > 180) angle -= 360;
+                if (angle < -180) angle += 360;
+                
                 return angle;
             }
             
