@@ -1,7 +1,7 @@
 {
-  "name": "Haiku Fan Control",
-  "short_name": "Fan Control",
-  "description": "BigAssFan MQTT Bridge - Control your Haiku fan from your mobile device",
+  "name": "Haiku Fan",
+  "short_name": "Haiku Fan",
+  "description": "Control your Haiku fan from your mobile device",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#667eea",
