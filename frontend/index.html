@@ -187,6 +187,99 @@
             color: #667eea;
         }
 
+        /* Toggle button styles */
+        .toggle-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            border: none;
+            border-radius: 50%;
+            font-size: 2.5em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #e9ecef;
+            color: #666;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .toggle-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .toggle-button.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .toggle-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        /* Knob control styles */
+        .knob-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .knob {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #f0f0f0, #cacaca);
+            box-shadow: 5px 5px 10px #bebebe, -5px -5px 10px #ffffff;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .knob.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .knob-indicator {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 50px;
+            background: #667eea;
+            border-radius: 2px;
+            transform-origin: center 60px;
+            transition: transform 0.1s ease;
+        }
+
+        .knob-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .knob-label {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
         .fan-name {
             text-align: center;
             margin-bottom: 20px;
@@ -325,16 +418,20 @@
             
             <div class="control-group">
                 <label>Power</label>
-                <div class="button-group">
-                    <button id="lightPowerOnBtn" class="primary" onclick="setLightPower('ON')">Turn On</button>
-                    <button id="lightPowerOffBtn" class="secondary" onclick="setLightPower('OFF')">Turn Off</button>
+                <div class="button-container">
+                    <button id="lightToggleBtn" class="toggle-button" onclick="toggleLight()">💡</button>
                 </div>
             </div>
 
             <div class="control-group">
                 <label>Brightness</label>
-                <input type="range" id="lightLevel" min="0" max="16" value="0" onchange="setLightLevel(this.value)">
-                <div class="slider-value"><span id="lightLevelValue">0</span> / 16</div>
+                <div class="knob-container">
+                    <div class="knob" id="lightKnob">
+                        <div class="knob-indicator" id="lightKnobIndicator"></div>
+                        <div class="knob-value" id="lightKnobValue">0</div>
+                    </div>
+                    <div class="knob-label">0 - 16</div>
+                </div>
             </div>
         </div>
     </div>
@@ -345,13 +442,125 @@
         let updateInterval;
         let loadingTimeout;
         let isWaitingForUpdate = false;
+        let currentLightLevel = 0;
+        let currentLightPower = 'OFF';
+        let isDraggingKnob = false;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             checkHealth();
             updateState();
             updateInterval = setInterval(updateState, 5000);
+            initKnobControl();
         });
+
+        function initKnobControl() {
+            const knob = document.getElementById('lightKnob');
+            const indicator = document.getElementById('lightKnobIndicator');
+            
+            let startAngle = 0;
+            let currentAngle = -135; // Start at minimum position
+            
+            function updateKnobRotation(angle) {
+                // Constrain angle between -135 and 135 degrees (270 degree range)
+                angle = Math.max(-135, Math.min(135, angle));
+                indicator.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+                
+                // Convert angle to value (0-16)
+                const normalizedAngle = (angle + 135) / 270; // 0 to 1
+                const value = Math.round(normalizedAngle * 16);
+                return value;
+            }
+            
+            function handleMouseMove(e) {
+                if (!isDraggingKnob || currentLightPower === 'OFF') return;
+                
+                const rect = knob.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                const dx = e.clientX - centerX;
+                const dy = e.clientY - centerY;
+                
+                let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+                angle = angle + 90; // Adjust for top-centered indicator
+                
+                const value = updateKnobRotation(angle);
+                document.getElementById('lightKnobValue').textContent = value;
+            }
+            
+            function handleMouseUp() {
+                if (isDraggingKnob && currentLightPower === 'ON') {
+                    const value = parseInt(document.getElementById('lightKnobValue').textContent);
+                    setLightLevel(value);
+                }
+                isDraggingKnob = false;
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            }
+            
+            knob.addEventListener('mousedown', function(e) {
+                if (currentLightPower === 'OFF') return;
+                isDraggingKnob = true;
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+            });
+            
+            // Touch support
+            knob.addEventListener('touchstart', function(e) {
+                if (currentLightPower === 'OFF') return;
+                isDraggingKnob = true;
+                e.preventDefault();
+            });
+            
+            knob.addEventListener('touchmove', function(e) {
+                if (!isDraggingKnob || currentLightPower === 'OFF') return;
+                e.preventDefault();
+                
+                const touch = e.touches[0];
+                const rect = knob.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                const dx = touch.clientX - centerX;
+                const dy = touch.clientY - centerY;
+                
+                let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+                angle = angle + 90;
+                
+                const value = updateKnobRotation(angle);
+                document.getElementById('lightKnobValue').textContent = value;
+            });
+            
+            knob.addEventListener('touchend', function() {
+                if (isDraggingKnob && currentLightPower === 'ON') {
+                    const value = parseInt(document.getElementById('lightKnobValue').textContent);
+                    setLightLevel(value);
+                }
+                isDraggingKnob = false;
+            });
+        }
+
+        function updateKnobDisplay(level) {
+            const indicator = document.getElementById('lightKnobIndicator');
+            const valueDisplay = document.getElementById('lightKnobValue');
+            const knob = document.getElementById('lightKnob');
+            
+            // Update value display
+            valueDisplay.textContent = level;
+            
+            // Update rotation (map 0-16 to -135 to 135 degrees)
+            const normalizedValue = level / 16;
+            const angle = (normalizedValue * 270) - 135;
+            indicator.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+            
+            // Update disabled state
+            if (currentLightPower === 'OFF') {
+                knob.classList.add('disabled');
+            } else {
+                knob.classList.remove('disabled');
+            }
+        }
 
         function showLoading() {
             const overlay = document.getElementById('loadingOverlay');
@@ -408,6 +617,15 @@
             }
         }
 
+        function updateLightToggleButton(state) {
+            const toggleBtn = document.getElementById('lightToggleBtn');
+            if (state === 'ON') {
+                toggleBtn.classList.add('active');
+            } else {
+                toggleBtn.classList.remove('active');
+            }
+        }
+
         async function checkHealth() {
             try {
                 const response = await fetch(`${API_BASE}/../health`);
@@ -454,10 +672,16 @@
                     document.getElementById('fanSpeedValue').textContent = state.speed;
                 }
 
-                // Update light level slider
+                // Update light level and power state
                 if (state.light_level !== null && state.light_level !== undefined) {
-                    document.getElementById('lightLevel').value = state.light_level;
-                    document.getElementById('lightLevelValue').textContent = state.light_level;
+                    currentLightLevel = state.light_level;
+                    updateKnobDisplay(currentLightLevel);
+                }
+
+                if (state.light_power) {
+                    currentLightPower = state.light_power;
+                    updateLightToggleButton(currentLightPower);
+                    updateKnobDisplay(currentLightLevel);
                 }
 
                 // Update button states based on current power states
@@ -467,10 +691,6 @@
 
                 if (state.whoosh) {
                     updateButtonStates('whooshOnBtn', 'whooshOffBtn', state.whoosh);
-                }
-
-                if (state.light_power) {
-                    updateButtonStates('lightPowerOnBtn', 'lightPowerOffBtn', state.light_power);
                 }
 
                 // Update health status
@@ -557,7 +777,8 @@
             }
         }
 
-        async function setLightPower(state) {
+        async function toggleLight() {
+            const newState = currentLightPower === 'ON' ? 'OFF' : 'ON';
             showLoading();
             try {
                 const response = await fetch(`${API_BASE}/light/power`, {
@@ -565,7 +786,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ state: state })
+                    body: JSON.stringify({ state: newState })
                 });
 
                 if (!response.ok) {
@@ -580,7 +801,11 @@
         }
 
         async function setLightLevel(level) {
-            document.getElementById('lightLevelValue').textContent = level;
+            if (currentLightPower === 'OFF') {
+                return; // Don't allow changing level when light is off
+            }
+            
+            updateKnobDisplay(level);
             showLoading();
             
             try {

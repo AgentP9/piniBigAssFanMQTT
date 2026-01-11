@@ -18,7 +18,7 @@ class SenseMeClient:
     """Client for communicating with BigAssFan Haiku fans using the SenseMe protocol."""
     
     # Default light level when turning light on
-    DEFAULT_LIGHT_LEVEL = 16
+    DEFAULT_LIGHT_LEVEL = 5
     
     def __init__(self, fan_ip: str, port: int = 31415, fan_name: Optional[str] = None):
         self.fan_ip = fan_ip
