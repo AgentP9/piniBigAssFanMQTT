@@ -10,6 +10,7 @@ This project provides a REST API and MQTT bridge for BigAssFan Haiku fans using 
 
 - **REST API**: FastAPI-based REST API for fan control
 - **MQTT Integration** (Optional): Publishes fan states to MQTT broker when configured
+- **Progressive Web App (PWA)**: Install on mobile devices (iPhone, Android) for native app-like experience
 - **Web Interface**: Simple web UI for controlling the fan (accessible on port 1919)
 - **Docker Support**: Easy deployment with Docker Compose
 - **Environment Configuration**: Configure via environment variables (Portainer compatible)
@@ -56,6 +57,16 @@ This project provides a REST API and MQTT bridge for BigAssFan Haiku fans using 
    ```
 
 5. Access the web interface at: `http://localhost:1919`
+
+### Installing as a PWA
+
+After accessing the web interface, you can install it as a Progressive Web App on your mobile device:
+
+- **iPhone/iPad**: Open in Safari, tap Share → Add to Home Screen
+- **Android**: Open in Chrome, tap Menu → Install app
+- **Desktop**: Look for the install icon in your browser's address bar
+
+For detailed PWA installation instructions, see [PWA.md](PWA.md).
 
 ### Running Without MQTT
 
