@@ -17,6 +17,9 @@ logger = logging.getLogger(__name__)
 class SenseMeClient:
     """Client for communicating with BigAssFan Haiku fans using the SenseMe protocol."""
     
+    # Default light level when turning light on
+    DEFAULT_LIGHT_LEVEL = 16
+    
     def __init__(self, fan_ip: str, port: int = 31415, fan_name: Optional[str] = None):
         self.fan_ip = fan_ip
         self.port = port
@@ -24,6 +27,7 @@ class SenseMeClient:
         self.connected = False
         self._lock = threading.Lock()
         self.fan_name: Optional[str] = fan_name  # Can be pre-configured or discovered
+        self._last_light_level: int = self.DEFAULT_LIGHT_LEVEL  # Brightness when turning light on
         
     def connect(self) -> bool:
         """Establish UDP socket for the fan."""
@@ -174,19 +178,39 @@ class SenseMeClient:
         return response is not None
     
     def get_light_power(self) -> Optional[str]:
-        """Get the light power state (ON/OFF)."""
-        response = self.send_command("LIGHT;PWR;GET;ACTUAL")
-        if response:
-            # Parse response format: (FanName;LIGHT;PWR;ACTUAL;value)
-            parts = response.strip("()").split(";")
-            if len(parts) >= 5:
-                return parts[4]
+        """Get the light power state (ON/OFF).
+        
+        Since the light is controlled via brightness level, we derive the power
+        state from the level: level > 0 means ON, level == 0 means OFF.
+        """
+        level = self.get_light_level()
+        if level is not None:
+            return "ON" if level > 0 else "OFF"
         return None
     
     def set_light_power(self, state: str) -> bool:
-        """Set the light power state (ON/OFF)."""
-        response = self.send_command(f"LIGHT;PWR;{state}")
-        return response is not None
+        """Set the light power state (ON/OFF).
+        
+        This method controls the light by setting the brightness level:
+        - OFF: Sets level to 0
+        - ON: Sets level to the last known non-zero level (or default)
+        
+        This makes the light behave consistently with the fan, where power
+        is effectively controlled by the level setting.
+        """
+        if state == "OFF":
+            # Before turning off, get current level to remember it
+            current_level = self.get_light_level()
+            if current_level is not None and current_level > 0:
+                self._last_light_level = current_level
+            # Turn off by setting level to 0
+            return self.set_light_level(0)
+        elif state == "ON":
+            # Turn on by setting level to last known level or default
+            return self.set_light_level(self._last_light_level)
+        else:
+            logger.error(f"Invalid light power state: {state}. Must be 'ON' or 'OFF'.")
+            return False
     
     def get_light_level(self) -> Optional[int]:
         """Get the light brightness level (0-16)."""
