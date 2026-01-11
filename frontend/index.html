@@ -309,6 +309,11 @@
             const onBtn = document.getElementById(onBtnId);
             const offBtn = document.getElementById(offBtnId);
             
+            // Ensure both buttons exist before updating
+            if (!onBtn || !offBtn) {
+                return;
+            }
+            
             if (currentState === 'ON') {
                 onBtn.className = 'primary';
                 offBtn.className = 'secondary';
