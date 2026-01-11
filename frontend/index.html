@@ -456,6 +456,26 @@
         // Convert from standard mathematical angle (0° = right) to UI angle (0° = top)
         const INDICATOR_OFFSET_DEGREES = 90;
 
+        // Knob utility functions
+        function isLightInteractionDisabled() {
+            return currentLightPower === 'OFF';
+        }
+
+        function angleToValue(angle) {
+            const normalizedAngle = (angle - KNOB_MIN_ANGLE) / KNOB_ANGLE_RANGE; // 0 to 1
+            return Math.round(normalizedAngle * KNOB_MAX_VALUE);
+        }
+
+        function valueToAngle(value) {
+            const normalizedValue = value / KNOB_MAX_VALUE;
+            return (normalizedValue * KNOB_ANGLE_RANGE) + KNOB_MIN_ANGLE;
+        }
+
+        function setIndicatorAngle(angle) {
+            const indicator = document.getElementById('lightKnobIndicator');
+            indicator.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             checkHealth();
@@ -466,29 +486,6 @@
 
         function initKnobControl() {
             const knob = document.getElementById('lightKnob');
-            const indicator = document.getElementById('lightKnobIndicator');
-            
-            // Helper function to check if light interaction is disabled
-            function isLightInteractionDisabled() {
-                return currentLightPower === 'OFF';
-            }
-            
-            // Helper function to convert angle to knob value (0-16)
-            function angleToValue(angle) {
-                const normalizedAngle = (angle - KNOB_MIN_ANGLE) / KNOB_ANGLE_RANGE; // 0 to 1
-                return Math.round(normalizedAngle * KNOB_MAX_VALUE);
-            }
-            
-            // Helper function to convert knob value (0-16) to angle
-            function valueToAngle(value) {
-                const normalizedValue = value / KNOB_MAX_VALUE;
-                return (normalizedValue * KNOB_ANGLE_RANGE) + KNOB_MIN_ANGLE;
-            }
-            
-            // Helper function to set indicator rotation
-            function setIndicatorAngle(angle) {
-                indicator.style.transform = `translateX(-50%) rotate(${angle}deg)`;
-            }
             
             function setIndicatorRotation(angle) {
                 // Constrain angle between min and max degrees
@@ -575,11 +572,9 @@
             // Update value display
             valueDisplay.textContent = level;
             
-            // Update rotation using helper function from initKnobControl
-            const indicator = document.getElementById('lightKnobIndicator');
-            const normalizedValue = level / KNOB_MAX_VALUE;
-            const angle = (normalizedValue * KNOB_ANGLE_RANGE) + KNOB_MIN_ANGLE;
-            indicator.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+            // Update rotation using helper function
+            const angle = valueToAngle(level);
+            setIndicatorAngle(angle);
             
             // Update disabled state
             if (currentLightPower === 'OFF') {
