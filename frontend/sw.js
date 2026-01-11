@@ -73,7 +73,7 @@ self.addEventListener('fetch', (event) => {
         
         caches.open(CACHE_NAME).then((cache) => {
           cache.put(event.request, responseToCache);
-        });
+        }).catch((err) => console.log('[Service Worker] Cache put failed:', err));
         
         return response;
       })
@@ -85,7 +85,8 @@ self.addEventListener('fetch', (event) => {
               return cachedResponse;
             }
             // If not in cache either, return offline page for HTML requests
-            if (event.request.headers.get('accept').includes('text/html')) {
+            const acceptHeader = event.request.headers.get('accept');
+            if (acceptHeader && acceptHeader.includes('text/html')) {
               return caches.match('/index.html');
             }
           });
