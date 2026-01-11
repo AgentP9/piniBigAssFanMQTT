@@ -245,8 +245,8 @@
             <div class="control-group">
                 <label>Power</label>
                 <div class="button-group">
-                    <button class="primary" onclick="setFanPower('ON')">Turn On</button>
-                    <button class="secondary" onclick="setFanPower('OFF')">Turn Off</button>
+                    <button id="fanPowerOnBtn" class="primary" onclick="setFanPower('ON')">Turn On</button>
+                    <button id="fanPowerOffBtn" class="secondary" onclick="setFanPower('OFF')">Turn Off</button>
                 </div>
             </div>
 
@@ -259,8 +259,8 @@
             <div class="control-group">
                 <label>Whoosh Mode</label>
                 <div class="button-group">
-                    <button class="primary" onclick="setWhoosh('ON')">Enable</button>
-                    <button class="secondary" onclick="setWhoosh('OFF')">Disable</button>
+                    <button id="whooshOnBtn" class="primary" onclick="setWhoosh('ON')">Enable</button>
+                    <button id="whooshOffBtn" class="secondary" onclick="setWhoosh('OFF')">Disable</button>
                 </div>
             </div>
         </div>
@@ -272,8 +272,8 @@
             <div class="control-group">
                 <label>Power</label>
                 <div class="button-group">
-                    <button class="primary" onclick="setLightPower('ON')">Turn On</button>
-                    <button class="secondary" onclick="setLightPower('OFF')">Turn Off</button>
+                    <button id="lightPowerOnBtn" class="primary" onclick="setLightPower('ON')">Turn On</button>
+                    <button id="lightPowerOffBtn" class="secondary" onclick="setLightPower('OFF')">Turn Off</button>
                 </div>
             </div>
 
@@ -303,6 +303,19 @@
             setTimeout(() => {
                 errorDiv.style.display = 'none';
             }, 5000);
+        }
+
+        function updateButtonStates(onBtnId, offBtnId, currentState) {
+            const onBtn = document.getElementById(onBtnId);
+            const offBtn = document.getElementById(offBtnId);
+            
+            if (currentState === 'ON') {
+                onBtn.className = 'primary';
+                offBtn.className = 'secondary';
+            } else if (currentState === 'OFF') {
+                onBtn.className = 'secondary';
+                offBtn.className = 'primary';
+            }
         }
 
         async function checkHealth() {
@@ -355,6 +368,19 @@
                 if (state.light_level !== null && state.light_level !== undefined) {
                     document.getElementById('lightLevel').value = state.light_level;
                     document.getElementById('lightLevelValue').textContent = state.light_level;
+                }
+
+                // Update button states based on current power states
+                if (state.power) {
+                    updateButtonStates('fanPowerOnBtn', 'fanPowerOffBtn', state.power);
+                }
+
+                if (state.whoosh) {
+                    updateButtonStates('whooshOnBtn', 'whooshOffBtn', state.whoosh);
+                }
+
+                if (state.light_power) {
+                    updateButtonStates('lightPowerOnBtn', 'lightPowerOffBtn', state.light_power);
                 }
 
                 // Update health status
