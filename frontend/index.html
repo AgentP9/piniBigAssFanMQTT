@@ -260,7 +260,7 @@
             height: 50px;
             background: #667eea;
             border-radius: 2px;
-            /* transform-origin: center of knob (75px from top of indicator) */
+            /* Knob radius (75px) minus indicator top (15px) = 60px from indicator top to center */
             transform-origin: center 60px;
             transition: transform 0.1s ease;
         }
@@ -450,10 +450,11 @@
         // Knob control constants
         const KNOB_MIN_ANGLE = -135;
         const KNOB_MAX_ANGLE = 135;
-        const KNOB_ANGLE_RANGE = 270; // KNOB_MAX_ANGLE - KNOB_MIN_ANGLE
+        const KNOB_ANGLE_RANGE = KNOB_MAX_ANGLE - KNOB_MIN_ANGLE; // 270 degrees
         const KNOB_MAX_VALUE = 16;
         const RADIANS_TO_DEGREES = 180 / Math.PI;
-        const INDICATOR_OFFSET_DEGREES = 90; // Adjust for top-centered indicator
+        // Convert from standard mathematical angle (0° = right) to UI angle (0° = top)
+        const INDICATOR_OFFSET_DEGREES = 90;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
