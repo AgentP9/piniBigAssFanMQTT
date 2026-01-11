@@ -31,7 +31,7 @@ This repository implements a complete MQTT bridge for BigAssFan Haiku fans, prov
 **API Endpoints:**
 - Health & Status: `/health`, `/`
 - Fan State: `/api/fan/state`
-- Fan Control: `/api/fan/power`, `/api/fan/speed`, `/api/fan/whoosh`
+- Fan Control: `/api/fan/power`, `/api/fan/speed`
 - Light Control: `/api/light/power`, `/api/light/level`
 
 ### 2. Frontend (HTML/JavaScript)
@@ -44,7 +44,7 @@ This repository implements a complete MQTT bridge for BigAssFan Haiku fans, prov
 - Responsive web interface
 - Real-time fan control
 - Connection status indicators
-- Fan controls: power, speed (0-7), whoosh mode
+- Fan controls: power, speed (0-7)
 - Light controls: power, brightness (0-16)
 - Auto-refresh of fan states
 - Error handling and user feedback
@@ -58,7 +58,6 @@ This repository implements a complete MQTT bridge for BigAssFan Haiku fans, prov
 - `haiku_fan/name` - Fan name
 - `haiku_fan/power` - Fan power state
 - `haiku_fan/speed` - Fan speed (0-7)
-- `haiku_fan/whoosh` - Whoosh mode state
 - `haiku_fan/light_power` - Light power state
 - `haiku_fan/light_level` - Light brightness (0-16)
 - `haiku_fan/state` - Complete state as JSON

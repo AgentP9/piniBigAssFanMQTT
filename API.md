@@ -77,7 +77,6 @@ Returns all current states of the fan.
   "name": "Living Room Fan",
   "power": "ON",
   "speed": 3,
-  "whoosh": "OFF",
   "light_power": "ON",
   "light_level": 10
 }
@@ -161,43 +160,6 @@ POST /api/fan/speed
 {
   "success": true,
   "speed": 5
-}
-```
-
-### Whoosh Mode Control
-
-#### Get Whoosh Mode State
-```http
-GET /api/fan/whoosh
-```
-
-**Response**
-```json
-{
-  "whoosh": "OFF"
-}
-```
-
-#### Set Whoosh Mode State
-```http
-POST /api/fan/whoosh
-```
-
-**Request Body**
-```json
-{
-  "state": "ON"
-}
-```
-
-**Parameters**
-- `state` (string, required): Either "ON" or "OFF"
-
-**Response**
-```json
-{
-  "success": true,
-  "whoosh": "ON"
 }
 ```
 
