@@ -19,6 +19,7 @@
             justify-content: center;
             align-items: center;
             padding: 20px;
+            --loading-overlay-z-index: 9999;
         }
 
         .container {
@@ -210,9 +211,62 @@
             padding: 20px;
             color: #666;
         }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: var(--loading-overlay-z-index);
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-spinner {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #333;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" role="status" aria-live="polite" aria-label="Loading">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <div class="loading-text">Updating...</div>
+        </div>
+    </div>
+
     <div class="container">
         <h1>🌀 Haiku Fan Control</h1>
         <p class="subtitle">BigAssFan MQTT Bridge</p>
@@ -287,7 +341,10 @@
 
     <script>
         const API_BASE = '/api';
+        const LOADING_TIMEOUT_MS = 10000; // Maximum time to show loading indicator
         let updateInterval;
+        let loadingTimeout;
+        let isWaitingForUpdate = false;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
@@ -295,6 +352,34 @@
             updateState();
             updateInterval = setInterval(updateState, 5000);
         });
+
+        function showLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.classList.add('active');
+            isWaitingForUpdate = true;
+
+            // Clear any existing timeout
+            if (loadingTimeout) {
+                clearTimeout(loadingTimeout);
+            }
+
+            // Set maximum 10 second timeout
+            loadingTimeout = setTimeout(() => {
+                hideLoading();
+            }, LOADING_TIMEOUT_MS);
+        }
+
+        function hideLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.classList.remove('active');
+            isWaitingForUpdate = false;
+
+            // Clear the timeout
+            if (loadingTimeout) {
+                clearTimeout(loadingTimeout);
+                loadingTimeout = null;
+            }
+        }
 
         function showError(message) {
             const errorDiv = document.getElementById('errorMessage');
@@ -390,12 +475,22 @@
 
                 // Update health status
                 checkHealth();
+
+                // Hide loading indicator if we were waiting for an update
+                if (isWaitingForUpdate) {
+                    hideLoading();
+                }
             } catch (error) {
                 console.error('Failed to update state:', error);
+                // Hide loading on error as well
+                if (isWaitingForUpdate) {
+                    hideLoading();
+                }
             }
         }
 
         async function setFanPower(state) {
+            showLoading();
             try {
                 const response = await fetch(`${API_BASE}/fan/power`, {
                     method: 'POST',
@@ -412,11 +507,13 @@
                 setTimeout(updateState, 1000);
             } catch (error) {
                 showError('Failed to set fan power: ' + error.message);
+                hideLoading();
             }
         }
 
         async function setFanSpeed(speed) {
             document.getElementById('fanSpeedValue').textContent = speed;
+            showLoading();
             
             try {
                 const response = await fetch(`${API_BASE}/fan/speed`, {
@@ -434,10 +531,12 @@
                 setTimeout(updateState, 1000);
             } catch (error) {
                 showError('Failed to set fan speed: ' + error.message);
+                hideLoading();
             }
         }
 
         async function setWhoosh(state) {
+            showLoading();
             try {
                 const response = await fetch(`${API_BASE}/fan/whoosh`, {
                     method: 'POST',
@@ -454,10 +553,12 @@
                 setTimeout(updateState, 1000);
             } catch (error) {
                 showError('Failed to set whoosh mode: ' + error.message);
+                hideLoading();
             }
         }
 
         async function setLightPower(state) {
+            showLoading();
             try {
                 const response = await fetch(`${API_BASE}/light/power`, {
                     method: 'POST',
@@ -474,11 +575,13 @@
                 setTimeout(updateState, 1000);
             } catch (error) {
                 showError('Failed to set light power: ' + error.message);
+                hideLoading();
             }
         }
 
         async function setLightLevel(level) {
             document.getElementById('lightLevelValue').textContent = level;
+            showLoading();
             
             try {
                 const response = await fetch(`${API_BASE}/light/level`, {
@@ -496,6 +599,7 @@
                 setTimeout(updateState, 1000);
             } catch (error) {
                 showError('Failed to set light level: ' + error.message);
+                hideLoading();
             }
         }
     </script>
