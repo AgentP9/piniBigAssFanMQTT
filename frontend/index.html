@@ -260,8 +260,7 @@
             height: 50px;
             background: #667eea;
             border-radius: 2px;
-            /* Distance from indicator top to knob center: 
-               Knob height (150px) / 2 - indicator top (15px) = 60px */
+            /* Distance = knob center (75px) - indicator top (15px) = 60px */
             transform-origin: center 60px;
             transition: transform 0.1s ease;
         }
@@ -469,15 +468,33 @@
             const knob = document.getElementById('lightKnob');
             const indicator = document.getElementById('lightKnobIndicator');
             
+            // Helper function to check if light interaction is disabled
+            function isLightInteractionDisabled() {
+                return currentLightPower === 'OFF';
+            }
+            
+            // Helper function to convert angle to knob value (0-16)
+            function angleToValue(angle) {
+                const normalizedAngle = (angle - KNOB_MIN_ANGLE) / KNOB_ANGLE_RANGE; // 0 to 1
+                return Math.round(normalizedAngle * KNOB_MAX_VALUE);
+            }
+            
+            // Helper function to convert knob value (0-16) to angle
+            function valueToAngle(value) {
+                const normalizedValue = value / KNOB_MAX_VALUE;
+                return (normalizedValue * KNOB_ANGLE_RANGE) + KNOB_MIN_ANGLE;
+            }
+            
+            // Helper function to set indicator rotation
+            function setIndicatorAngle(angle) {
+                indicator.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+            }
+            
             function setIndicatorRotation(angle) {
                 // Constrain angle between min and max degrees
                 angle = Math.max(KNOB_MIN_ANGLE, Math.min(KNOB_MAX_ANGLE, angle));
-                indicator.style.transform = `translateX(-50%) rotate(${angle}deg)`;
-                
-                // Convert angle to value (0-KNOB_MAX_VALUE)
-                const normalizedAngle = (angle - KNOB_MIN_ANGLE) / KNOB_ANGLE_RANGE; // 0 to 1
-                const value = Math.round(normalizedAngle * KNOB_MAX_VALUE);
-                return value;
+                setIndicatorAngle(angle);
+                return angleToValue(angle);
             }
             
             function calculateAngleFromPosition(clientX, clientY) {
@@ -501,7 +518,7 @@
             }
             
             function handleMouseMove(e) {
-                if (!isDraggingKnob || currentLightPower === 'OFF') return;
+                if (!isDraggingKnob || isLightInteractionDisabled()) return;
                 
                 const angle = calculateAngleFromPosition(e.clientX, e.clientY);
                 const value = setIndicatorRotation(angle);
@@ -509,7 +526,7 @@
             }
             
             function handleMouseUp() {
-                if (isDraggingKnob && currentLightPower === 'ON') {
+                if (isDraggingKnob && !isLightInteractionDisabled()) {
                     const value = parseInt(document.getElementById('lightKnobValue').textContent);
                     setLightLevel(value);
                 }
@@ -519,7 +536,7 @@
             }
             
             knob.addEventListener('mousedown', function(e) {
-                if (currentLightPower === 'OFF') return;
+                if (isLightInteractionDisabled()) return;
                 isDraggingKnob = true;
                 document.addEventListener('mousemove', handleMouseMove);
                 document.addEventListener('mouseup', handleMouseUp);
@@ -527,13 +544,13 @@
             
             // Touch support
             knob.addEventListener('touchstart', function(e) {
-                if (currentLightPower === 'OFF') return;
+                if (isLightInteractionDisabled()) return;
                 isDraggingKnob = true;
                 e.preventDefault();
             });
             
             knob.addEventListener('touchmove', function(e) {
-                if (!isDraggingKnob || currentLightPower === 'OFF') return;
+                if (!isDraggingKnob || isLightInteractionDisabled()) return;
                 e.preventDefault();
                 
                 const touch = e.touches[0];
@@ -543,7 +560,7 @@
             });
             
             knob.addEventListener('touchend', function() {
-                if (isDraggingKnob && currentLightPower === 'ON') {
+                if (isDraggingKnob && !isLightInteractionDisabled()) {
                     const value = parseInt(document.getElementById('lightKnobValue').textContent);
                     setLightLevel(value);
                 }
@@ -552,14 +569,14 @@
         }
 
         function updateKnobDisplay(level) {
-            const indicator = document.getElementById('lightKnobIndicator');
             const valueDisplay = document.getElementById('lightKnobValue');
             const knob = document.getElementById('lightKnob');
             
             // Update value display
             valueDisplay.textContent = level;
             
-            // Update rotation (map 0-KNOB_MAX_VALUE to KNOB_MIN_ANGLE to KNOB_MAX_ANGLE degrees)
+            // Update rotation using helper function from initKnobControl
+            const indicator = document.getElementById('lightKnobIndicator');
             const normalizedValue = level / KNOB_MAX_VALUE;
             const angle = (normalizedValue * KNOB_ANGLE_RANGE) + KNOB_MIN_ANGLE;
             indicator.style.transform = `translateX(-50%) rotate(${angle}deg)`;
