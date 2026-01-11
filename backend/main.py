@@ -91,10 +91,9 @@ async def lifespan(app: FastAPI):
         logger.info(f"MQTT Broker: {MQTT_BROKER}:{MQTT_PORT}")
         if MQTT_USER:
             logger.info("MQTT Authentication: Enabled")
-            mqtt_publisher = MQTTPublisher(MQTT_BROKER, MQTT_PORT, username=MQTT_USER, password=MQTT_PASS)
         else:
             logger.info("MQTT Authentication: Disabled")
-            mqtt_publisher = MQTTPublisher(MQTT_BROKER, MQTT_PORT)
+        mqtt_publisher = MQTTPublisher(MQTT_BROKER, MQTT_PORT, username=MQTT_USER or None, password=MQTT_PASS or None)
         mqtt_publisher.connect()
     else:
         logger.info("MQTT Broker not configured - MQTT publishing disabled")
