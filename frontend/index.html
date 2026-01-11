@@ -332,7 +332,7 @@
             <div class="control-group">
                 <label>Power</label>
                 <div class="button-container">
-                    <button id="fanPowerBtn" class="toggle-button" onclick="toggleFanPower()">🌀</button>
+                    <button id="fanPowerBtn" class="toggle-button" onclick="toggleFanPower()" aria-label="Toggle fan power">🌀</button>
                 </div>
             </div>
 
@@ -350,7 +350,7 @@
             <div class="control-group">
                 <label>Whoosh Mode</label>
                 <div class="button-container">
-                    <button id="whooshBtn" class="toggle-button" onclick="toggleWhoosh()">💨</button>
+                    <button id="whooshBtn" class="toggle-button" onclick="toggleWhoosh()" aria-label="Toggle whoosh mode">💨</button>
                 </div>
             </div>
         </div>
@@ -362,7 +362,7 @@
             <div class="control-group">
                 <label>Power</label>
                 <div class="button-container">
-                    <button id="lightToggleBtn" class="toggle-button" onclick="toggleLight()">💡</button>
+                    <button id="lightToggleBtn" class="toggle-button" onclick="toggleLight()" aria-label="Toggle light power">💡</button>
                 </div>
             </div>
 
@@ -687,15 +687,16 @@
                 // Update fan speed knob
                 if (state.speed !== null && state.speed !== undefined) {
                     currentFanSpeed = state.speed;
-                    updateFanSpeedKnobDisplay(currentFanSpeed);
                 }
 
                 // Update fan power state
                 if (state.power !== undefined && state.power !== null) {
                     currentFanPower = state.power;
                     updateFanPowerToggleButton(currentFanPower);
-                    updateFanSpeedKnobDisplay(currentFanSpeed);
                 }
+
+                // Update fan speed knob display (after both speed and power state are set)
+                updateFanSpeedKnobDisplay(currentFanSpeed);
 
                 // Update whoosh mode state
                 if (state.whoosh !== undefined && state.whoosh !== null) {
