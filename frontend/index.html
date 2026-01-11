@@ -187,46 +187,6 @@
             color: #667eea;
         }
 
-        /* Toggle button styles */
-        .toggle-button {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 80px;
-            height: 80px;
-            border: none;
-            border-radius: 50%;
-            font-size: 2.5em;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: #e9ecef;
-            color: #666;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .toggle-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .toggle-button.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
-        }
-
-        .toggle-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .button-container {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-
         /* Knob control styles */
         .knob-container {
             display: flex;
@@ -419,8 +379,9 @@
             
             <div class="control-group">
                 <label>Power</label>
-                <div class="button-container">
-                    <button id="lightToggleBtn" class="toggle-button" onclick="toggleLight()">💡</button>
+                <div class="button-group">
+                    <button id="lightPowerOnBtn" class="primary" onclick="setLightPower('ON')">Turn On</button>
+                    <button id="lightPowerOffBtn" class="secondary" onclick="setLightPower('OFF')">Turn Off</button>
                 </div>
             </div>
 
@@ -640,12 +601,7 @@
         }
 
         function updateLightToggleButton(state) {
-            const toggleBtn = document.getElementById('lightToggleBtn');
-            if (state === 'ON') {
-                toggleBtn.classList.add('active');
-            } else {
-                toggleBtn.classList.remove('active');
-            }
+            updateButtonStates('lightPowerOnBtn', 'lightPowerOffBtn', state);
         }
 
         async function checkHealth() {
@@ -799,8 +755,7 @@
             }
         }
 
-        async function toggleLight() {
-            const newState = currentLightPower === 'ON' ? 'OFF' : 'ON';
+        async function setLightPower(state) {
             showLoading();
             try {
                 const response = await fetch(`${API_BASE}/light/power`, {
@@ -808,7 +763,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ state: newState })
+                    body: JSON.stringify({ state: state })
                 });
 
                 if (!response.ok) {
