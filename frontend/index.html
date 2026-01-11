@@ -187,6 +187,46 @@
             color: #667eea;
         }
 
+        /* Toggle button styles */
+        .toggle-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            border: none;
+            border-radius: 50%;
+            font-size: 2.5em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #e9ecef;
+            color: #666;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .toggle-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .toggle-button.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .toggle-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
         /* Knob control styles */
         .knob-container {
             display: flex;
@@ -352,23 +392,26 @@
             
             <div class="control-group">
                 <label>Power</label>
-                <div class="button-group">
-                    <button id="fanPowerOnBtn" class="primary" onclick="setFanPower('ON')">Turn On</button>
-                    <button id="fanPowerOffBtn" class="secondary" onclick="setFanPower('OFF')">Turn Off</button>
+                <div class="button-container">
+                    <button id="fanPowerBtn" class="toggle-button" onclick="toggleFanPower()">🌀</button>
                 </div>
             </div>
 
             <div class="control-group">
                 <label>Speed</label>
-                <input type="range" id="fanSpeed" min="0" max="7" value="0" onchange="setFanSpeed(this.value)">
-                <div class="slider-value"><span id="fanSpeedValue">0</span> / 7</div>
+                <div class="knob-container">
+                    <div class="knob" id="fanSpeedKnob">
+                        <div class="knob-indicator" id="fanSpeedKnobIndicator"></div>
+                        <div class="knob-value" id="fanSpeedKnobValue">0</div>
+                    </div>
+                    <div class="knob-label">0 - 7</div>
+                </div>
             </div>
 
             <div class="control-group">
                 <label>Whoosh Mode</label>
-                <div class="button-group">
-                    <button id="whooshOnBtn" class="primary" onclick="setWhoosh('ON')">Enable</button>
-                    <button id="whooshOffBtn" class="secondary" onclick="setWhoosh('OFF')">Disable</button>
+                <div class="button-container">
+                    <button id="whooshBtn" class="toggle-button" onclick="toggleWhoosh()">💨</button>
                 </div>
             </div>
         </div>
@@ -379,9 +422,8 @@
             
             <div class="control-group">
                 <label>Power</label>
-                <div class="button-group">
-                    <button id="lightPowerOnBtn" class="primary" onclick="setLightPower('ON')">Turn On</button>
-                    <button id="lightPowerOffBtn" class="secondary" onclick="setLightPower('OFF')">Turn Off</button>
+                <div class="button-container">
+                    <button id="lightToggleBtn" class="toggle-button" onclick="toggleLight()">💡</button>
                 </div>
             </div>
 
@@ -406,13 +448,17 @@
         let isWaitingForUpdate = false;
         let currentLightLevel = 0;
         let currentLightPower = 'OFF';
+        let currentFanSpeed = 0;
+        let currentFanPower = 'OFF';
+        let currentWhoosh = 'OFF';
         let isDraggingKnob = false;
 
         // Knob control constants
         const KNOB_MIN_ANGLE = -135;
         const KNOB_MAX_ANGLE = 135;
         const KNOB_ANGLE_RANGE = KNOB_MAX_ANGLE - KNOB_MIN_ANGLE; // 270 degrees
-        const KNOB_MAX_VALUE = 16;
+        const LIGHT_KNOB_MAX_VALUE = 16;
+        const FAN_SPEED_KNOB_MAX_VALUE = 7;
         const RADIANS_TO_DEGREES = 180 / Math.PI;
         // Convert from standard mathematical angle (0° = right) to UI angle (0° = top)
         const INDICATOR_OFFSET_DEGREES = 90;
@@ -422,19 +468,22 @@
             return currentLightPower === 'OFF';
         }
 
-        function angleToValue(angle) {
-            const normalizedAngle = (angle - KNOB_MIN_ANGLE) / KNOB_ANGLE_RANGE; // 0 to 1
-            return Math.round(normalizedAngle * KNOB_MAX_VALUE);
+        function isFanInteractionDisabled() {
+            return currentFanPower === 'OFF';
         }
 
-        function valueToAngle(value) {
-            const normalizedValue = value / KNOB_MAX_VALUE;
+        function angleToValue(angle, maxValue) {
+            const normalizedAngle = (angle - KNOB_MIN_ANGLE) / KNOB_ANGLE_RANGE; // 0 to 1
+            return Math.round(normalizedAngle * maxValue);
+        }
+
+        function valueToAngle(value, maxValue) {
+            const normalizedValue = value / maxValue;
             return (normalizedValue * KNOB_ANGLE_RANGE) + KNOB_MIN_ANGLE;
         }
 
-        function setIndicatorAngle(angle) {
-            const indicator = document.getElementById('lightKnobIndicator');
-            indicator.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+        function setIndicatorAngle(indicatorElement, angle) {
+            indicatorElement.style.transform = `translateX(-50%) rotate(${angle}deg)`;
         }
 
         // Initialize
@@ -442,17 +491,21 @@
             checkHealth();
             updateState();
             updateInterval = setInterval(updateState, 5000);
-            initKnobControl();
+            initLightKnobControl();
+            initFanSpeedKnobControl();
         });
 
-        function initKnobControl() {
-            const knob = document.getElementById('lightKnob');
+        function createKnobControl(knobId, indicatorId, valueId, maxValue, isDisabledFn, setValueFn) {
+            const knob = document.getElementById(knobId);
+            const indicator = document.getElementById(indicatorId);
+            const valueElement = document.getElementById(valueId);
+            let isDragging = false;
             
             function setIndicatorRotation(angle) {
                 // Constrain angle between min and max degrees
                 angle = Math.max(KNOB_MIN_ANGLE, Math.min(KNOB_MAX_ANGLE, angle));
-                setIndicatorAngle(angle);
-                return angleToValue(angle);
+                setIndicatorAngle(indicator, angle);
+                return angleToValue(angle, maxValue);
             }
             
             function calculateAngleFromPosition(clientX, clientY) {
@@ -476,69 +529,112 @@
             }
             
             function handleMouseMove(e) {
-                if (!isDraggingKnob || isLightInteractionDisabled()) return;
+                if (!isDragging || isDisabledFn()) return;
                 
                 const angle = calculateAngleFromPosition(e.clientX, e.clientY);
                 const value = setIndicatorRotation(angle);
-                document.getElementById('lightKnobValue').textContent = value;
+                valueElement.textContent = value;
             }
             
             function handleMouseUp() {
-                if (isDraggingKnob && !isLightInteractionDisabled()) {
-                    const value = parseInt(document.getElementById('lightKnobValue').textContent);
-                    setLightLevel(value);
+                if (isDragging && !isDisabledFn()) {
+                    const value = parseInt(valueElement.textContent);
+                    setValueFn(value);
                 }
-                isDraggingKnob = false;
+                isDragging = false;
                 document.removeEventListener('mousemove', handleMouseMove);
                 document.removeEventListener('mouseup', handleMouseUp);
             }
             
             knob.addEventListener('mousedown', function(e) {
-                if (isLightInteractionDisabled()) return;
-                isDraggingKnob = true;
+                if (isDisabledFn()) return;
+                isDragging = true;
                 document.addEventListener('mousemove', handleMouseMove);
                 document.addEventListener('mouseup', handleMouseUp);
             });
             
             // Touch support
             knob.addEventListener('touchstart', function(e) {
-                if (isLightInteractionDisabled()) return;
-                isDraggingKnob = true;
+                if (isDisabledFn()) return;
+                isDragging = true;
                 e.preventDefault();
             });
             
             knob.addEventListener('touchmove', function(e) {
-                if (!isDraggingKnob || isLightInteractionDisabled()) return;
+                if (!isDragging || isDisabledFn()) return;
                 e.preventDefault();
                 
                 const touch = e.touches[0];
                 const angle = calculateAngleFromPosition(touch.clientX, touch.clientY);
                 const value = setIndicatorRotation(angle);
-                document.getElementById('lightKnobValue').textContent = value;
+                valueElement.textContent = value;
             });
             
             knob.addEventListener('touchend', function() {
-                if (isDraggingKnob && !isLightInteractionDisabled()) {
-                    const value = parseInt(document.getElementById('lightKnobValue').textContent);
-                    setLightLevel(value);
+                if (isDragging && !isDisabledFn()) {
+                    const value = parseInt(valueElement.textContent);
+                    setValueFn(value);
                 }
-                isDraggingKnob = false;
+                isDragging = false;
             });
         }
 
-        function updateKnobDisplay(level) {
+        function initLightKnobControl() {
+            createKnobControl(
+                'lightKnob',
+                'lightKnobIndicator',
+                'lightKnobValue',
+                LIGHT_KNOB_MAX_VALUE,
+                isLightInteractionDisabled,
+                setLightLevel
+            );
+        }
+
+        function initFanSpeedKnobControl() {
+            createKnobControl(
+                'fanSpeedKnob',
+                'fanSpeedKnobIndicator',
+                'fanSpeedKnobValue',
+                FAN_SPEED_KNOB_MAX_VALUE,
+                isFanInteractionDisabled,
+                setFanSpeed
+            );
+        }
+
+        function updateLightKnobDisplay(level) {
             const valueDisplay = document.getElementById('lightKnobValue');
+            const indicator = document.getElementById('lightKnobIndicator');
             const knob = document.getElementById('lightKnob');
             
             // Update value display
             valueDisplay.textContent = level;
             
             // Update rotation using helper function
-            const angle = valueToAngle(level);
-            setIndicatorAngle(angle);
+            const angle = valueToAngle(level, LIGHT_KNOB_MAX_VALUE);
+            setIndicatorAngle(indicator, angle);
             
             // Update disabled state
             if (currentLightPower === 'OFF') {
+                knob.classList.add('disabled');
+            } else {
+                knob.classList.remove('disabled');
+            }
+        }
+
+        function updateFanSpeedKnobDisplay(speed) {
+            const valueDisplay = document.getElementById('fanSpeedKnobValue');
+            const indicator = document.getElementById('fanSpeedKnobIndicator');
+            const knob = document.getElementById('fanSpeedKnob');
+            
+            // Update value display
+            valueDisplay.textContent = speed;
+            
+            // Update rotation using helper function
+            const angle = valueToAngle(speed, FAN_SPEED_KNOB_MAX_VALUE);
+            setIndicatorAngle(indicator, angle);
+            
+            // Update disabled state
+            if (currentFanPower === 'OFF') {
                 knob.classList.add('disabled');
             } else {
                 knob.classList.remove('disabled');
@@ -601,7 +697,30 @@
         }
 
         function updateLightToggleButton(state) {
-            updateButtonStates('lightPowerOnBtn', 'lightPowerOffBtn', state);
+            const toggleBtn = document.getElementById('lightToggleBtn');
+            if (state === 'ON') {
+                toggleBtn.classList.add('active');
+            } else {
+                toggleBtn.classList.remove('active');
+            }
+        }
+
+        function updateFanPowerToggleButton(state) {
+            const toggleBtn = document.getElementById('fanPowerBtn');
+            if (state === 'ON') {
+                toggleBtn.classList.add('active');
+            } else {
+                toggleBtn.classList.remove('active');
+            }
+        }
+
+        function updateWhooshToggleButton(state) {
+            const toggleBtn = document.getElementById('whooshBtn');
+            if (state === 'ON') {
+                toggleBtn.classList.add('active');
+            } else {
+                toggleBtn.classList.remove('active');
+            }
         }
 
         async function checkHealth() {
@@ -644,31 +763,35 @@
                     document.getElementById('fanName').textContent = `Fan: ${state.name}`;
                 }
 
-                // Update fan speed slider
+                // Update fan speed knob
                 if (state.speed !== null && state.speed !== undefined) {
-                    document.getElementById('fanSpeed').value = state.speed;
-                    document.getElementById('fanSpeedValue').textContent = state.speed;
+                    currentFanSpeed = state.speed;
+                    updateFanSpeedKnobDisplay(currentFanSpeed);
+                }
+
+                // Update fan power state
+                if (state.power !== undefined && state.power !== null) {
+                    currentFanPower = state.power;
+                    updateFanPowerToggleButton(currentFanPower);
+                    updateFanSpeedKnobDisplay(currentFanSpeed);
+                }
+
+                // Update whoosh mode state
+                if (state.whoosh !== undefined && state.whoosh !== null) {
+                    currentWhoosh = state.whoosh;
+                    updateWhooshToggleButton(currentWhoosh);
                 }
 
                 // Update light level and power state
                 if (state.light_level !== null && state.light_level !== undefined) {
                     currentLightLevel = state.light_level;
-                    updateKnobDisplay(currentLightLevel);
+                    updateLightKnobDisplay(currentLightLevel);
                 }
 
                 if (state.light_power !== undefined && state.light_power !== null) {
                     currentLightPower = state.light_power;
                     updateLightToggleButton(currentLightPower);
-                    updateKnobDisplay(currentLightLevel);
-                }
-
-                // Update button states based on current power states
-                if (state.power) {
-                    updateButtonStates('fanPowerOnBtn', 'fanPowerOffBtn', state.power);
-                }
-
-                if (state.whoosh) {
-                    updateButtonStates('whooshOnBtn', 'whooshOffBtn', state.whoosh);
+                    updateLightKnobDisplay(currentLightLevel);
                 }
 
                 // Update health status
@@ -685,6 +808,11 @@
                     hideLoading();
                 }
             }
+        }
+
+        async function toggleFanPower() {
+            const newState = currentFanPower === 'ON' ? 'OFF' : 'ON';
+            await setFanPower(newState);
         }
 
         async function setFanPower(state) {
@@ -710,7 +838,11 @@
         }
 
         async function setFanSpeed(speed) {
-            document.getElementById('fanSpeedValue').textContent = speed;
+            if (isFanInteractionDisabled()) {
+                return; // Don't allow changing speed when fan is off
+            }
+            
+            updateFanSpeedKnobDisplay(speed);
             showLoading();
             
             try {
@@ -731,6 +863,11 @@
                 showError('Failed to set fan speed: ' + error.message);
                 hideLoading();
             }
+        }
+
+        async function toggleWhoosh() {
+            const newState = currentWhoosh === 'ON' ? 'OFF' : 'ON';
+            await setWhoosh(newState);
         }
 
         async function setWhoosh(state) {
@@ -755,7 +892,8 @@
             }
         }
 
-        async function setLightPower(state) {
+        async function toggleLight() {
+            const newState = currentLightPower === 'ON' ? 'OFF' : 'ON';
             showLoading();
             try {
                 const response = await fetch(`${API_BASE}/light/power`, {
@@ -763,7 +901,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ state: state })
+                    body: JSON.stringify({ state: newState })
                 });
 
                 if (!response.ok) {
@@ -782,7 +920,7 @@
                 return; // Don't allow changing level when light is off
             }
             
-            updateKnobDisplay(level);
+            updateLightKnobDisplay(level);
             showLoading();
             
             try {
