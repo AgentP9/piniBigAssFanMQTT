@@ -30,7 +30,7 @@ class MQTTPublisher:
             self.client.on_disconnect = self._on_disconnect
             
             # Set username and password if provided
-            if self.username and self.password:
+            if self.username:
                 self.client.username_pw_set(self.username, self.password)
                 logger.info(f"Connecting to MQTT broker at {self.broker_host}:{self.broker_port} with authentication")
             else:
