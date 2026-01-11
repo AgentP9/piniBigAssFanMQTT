@@ -140,10 +140,6 @@ class SpeedRequest(BaseModel):
     speed: int = Field(..., ge=0, le=7, description="Fan speed from 0 to 7")
 
 
-class WhooshRequest(BaseModel):
-    state: str = Field(..., pattern="^(ON|OFF)$", description="Whoosh mode: ON or OFF")
-
-
 class LightPowerRequest(BaseModel):
     state: str = Field(..., pattern="^(ON|OFF)$", description="Light power: ON or OFF")
 
@@ -250,41 +246,6 @@ async def set_fan_speed(request: SpeedRequest):
         return {"success": True, "speed": request.speed}
     else:
         raise HTTPException(status_code=500, detail="Failed to set fan speed")
-
-
-@app.get("/api/fan/whoosh")
-async def get_fan_whoosh():
-    """Get whoosh mode state."""
-    if not senseme_client:
-        raise HTTPException(status_code=503, detail="SenseMe client not initialized")
-    
-    whoosh = senseme_client.get_fan_whoosh()
-    if whoosh is None:
-        raise HTTPException(status_code=503, detail="Failed to get whoosh state")
-    
-    return {"whoosh": whoosh}
-
-
-@app.post("/api/fan/whoosh")
-async def set_fan_whoosh(request: WhooshRequest):
-    """Set whoosh mode state."""
-    if not senseme_client:
-        raise HTTPException(status_code=503, detail="SenseMe client not initialized")
-    
-    if senseme_client.set_fan_whoosh(request.state):
-        # Update state immediately
-        time.sleep(1)
-        whoosh = senseme_client.get_fan_whoosh()
-        
-        # Update cached fan_states immediately for responsive UI (thread-safe)
-        with fan_states_lock:
-            fan_states["whoosh"] = whoosh
-        
-        if mqtt_publisher and mqtt_publisher.connected:
-            mqtt_publisher.publish_state("whoosh", whoosh)
-        return {"success": True, "whoosh": request.state}
-    else:
-        raise HTTPException(status_code=500, detail="Failed to set whoosh mode")
 
 
 @app.get("/api/light/power")

@@ -162,21 +162,6 @@ class SenseMeClient:
         response = self.send_command(f"FAN;SPD;SET;{speed}")
         return response is not None
     
-    def get_fan_whoosh(self) -> Optional[str]:
-        """Get the whoosh mode state (ON/OFF)."""
-        response = self.send_command("FAN;WHOOSH;GET;ACTUAL")
-        if response:
-            # Parse response format: (FanName;FAN;WHOOSH;ACTUAL;value)
-            parts = response.strip("()").split(";")
-            if len(parts) >= 5:
-                return parts[4]
-        return None
-    
-    def set_fan_whoosh(self, state: str) -> bool:
-        """Set the whoosh mode state (ON/OFF)."""
-        response = self.send_command(f"FAN;WHOOSH;{state}")
-        return response is not None
-    
     def get_light_power(self) -> Optional[str]:
         """Get the light power state (ON/OFF).
         
@@ -239,7 +224,6 @@ class SenseMeClient:
             "name": self.get_fan_name(),
             "power": self.get_fan_power(),
             "speed": self.get_fan_speed(),
-            "whoosh": self.get_fan_whoosh(),
             "light_power": self.get_light_power(),
             "light_level": self.get_light_level(),
         }

@@ -25,7 +25,7 @@ PURPOSE: MQTT Bridge for BigAssFan Haiku fans with REST API and Web UI
    ✓ Responsive web interface on port 1919
    ✓ Real-time fan control
    ✓ Connection status indicators
-   ✓ Fan controls: Power, Speed (0-7), Whoosh mode
+   ✓ Fan controls: Power, Speed (0-7)
    ✓ Light controls: Power, Brightness (0-16)
    ✓ Nginx reverse proxy for API routing
 
@@ -66,8 +66,6 @@ GET  /api/fan/power       - Get fan power state
 POST /api/fan/power       - Set fan power (ON/OFF)
 GET  /api/fan/speed       - Get fan speed
 POST /api/fan/speed       - Set fan speed (0-7)
-GET  /api/fan/whoosh      - Get whoosh mode state
-POST /api/fan/whoosh      - Set whoosh mode (ON/OFF)
 GET  /api/light/power     - Get light power state
 POST /api/light/power     - Set light power (ON/OFF)
 GET  /api/light/level     - Get light brightness
@@ -80,7 +78,6 @@ POST /api/light/level     - Set light brightness (0-16)
 haiku_fan/name           - Fan name
 haiku_fan/power          - Fan power state
 haiku_fan/speed          - Fan speed (0-7)
-haiku_fan/whoosh         - Whoosh mode state
 haiku_fan/light_power    - Light power state
 haiku_fan/light_level    - Light brightness (0-16)
 haiku_fan/state          - Complete state as JSON

@@ -19,7 +19,6 @@ This project provides a REST API and MQTT bridge for BigAssFan Haiku fans using 
 
 - Fan power (ON/OFF)
 - Fan speed (0-7)
-- Whoosh mode (ON/OFF)
 - Light power (ON/OFF)
 - Light brightness level (0-16)
 
@@ -129,8 +128,6 @@ Configure these variables in your `.env` file or through Portainer:
 - `POST /api/fan/power` - Set fan power (body: `{"state": "ON|OFF"}`)
 - `GET /api/fan/speed` - Get fan speed
 - `POST /api/fan/speed` - Set fan speed (body: `{"speed": 0-7}`)
-- `GET /api/fan/whoosh` - Get whoosh mode state
-- `POST /api/fan/whoosh` - Set whoosh mode (body: `{"state": "ON|OFF"}`)
 
 ### Light Control
 - `GET /api/light/power` - Get light power state
@@ -145,7 +142,6 @@ The service publishes fan states to the following MQTT topics:
 - `haiku_fan/name` - Fan name
 - `haiku_fan/power` - Fan power state
 - `haiku_fan/speed` - Fan speed (0-7)
-- `haiku_fan/whoosh` - Whoosh mode state
 - `haiku_fan/light_power` - Light power state
 - `haiku_fan/light_level` - Light brightness level (0-16)
 - `haiku_fan/state` - All states as JSON

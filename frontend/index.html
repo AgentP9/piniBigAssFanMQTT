@@ -493,10 +493,6 @@
                         <label>Power</label>
                         <button id="fanPowerBtn" class="toggle-button" onclick="toggleFanPower()" aria-label="Toggle fan power">🌀</button>
                     </div>
-                    <div>
-                        <label>Whoosh Mode</label>
-                        <button id="whooshBtn" class="toggle-button" onclick="toggleWhoosh()" aria-label="Toggle whoosh mode">💨</button>
-                    </div>
                 </div>
                 
                 <div class="control-right">
@@ -550,7 +546,6 @@
         let currentLightPower = 'OFF';
         let currentFanSpeed = 0;
         let currentFanPower = 'OFF';
-        let currentWhoosh = 'OFF';
         let isDraggingKnob = false;
 
         // Knob control constants
@@ -845,15 +840,6 @@
             }
         }
 
-        function updateWhooshToggleButton(state) {
-            const toggleBtn = document.getElementById('whooshBtn');
-            if (state === 'ON') {
-                toggleBtn.classList.add('active');
-            } else {
-                toggleBtn.classList.remove('active');
-            }
-        }
-
         async function checkHealth() {
             try {
                 const response = await fetch(`${API_BASE}/../health`);
@@ -896,12 +882,6 @@
 
                 // Update fan speed knob display (after both speed and power state are set)
                 updateFanSpeedKnobDisplay(currentFanSpeed);
-
-                // Update whoosh mode state
-                if (state.whoosh !== undefined && state.whoosh !== null) {
-                    currentWhoosh = state.whoosh;
-                    updateWhooshToggleButton(currentWhoosh);
-                }
 
                 // Update light level and power state
                 if (state.light_level !== null && state.light_level !== undefined) {
@@ -982,33 +962,6 @@
                 setTimeout(updateState, 1000);
             } catch (error) {
                 showError('Failed to set fan speed: ' + error.message);
-                hideLoading();
-            }
-        }
-
-        async function toggleWhoosh() {
-            const newState = currentWhoosh === 'ON' ? 'OFF' : 'ON';
-            await setWhoosh(newState);
-        }
-
-        async function setWhoosh(state) {
-            showLoading();
-            try {
-                const response = await fetch(`${API_BASE}/fan/whoosh`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ state: state })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to set whoosh mode');
-                }
-
-                setTimeout(updateState, 1000);
-            } catch (error) {
-                showError('Failed to set whoosh mode: ' + error.message);
                 hideLoading();
             }
         }

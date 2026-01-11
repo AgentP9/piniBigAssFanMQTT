@@ -136,7 +136,6 @@ You should see fan states being published every 30 seconds (or whatever POLL_INT
 3. Test all controls:
    - Fan power on/off
    - Fan speed slider
-   - Whoosh mode on/off
    - Light power on/off
    - Light brightness slider
 
@@ -185,7 +184,6 @@ You should see fan states being published every 30 seconds (or whatever POLL_INT
 - [ ] Can retrieve fan state
 - [ ] Can turn fan on/off
 - [ ] Can change fan speed (0-7)
-- [ ] Can toggle whoosh mode
 - [ ] Can turn light on/off
 - [ ] Can change light brightness (0-16)
 - [ ] MQTT messages are published
