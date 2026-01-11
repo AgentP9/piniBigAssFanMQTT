@@ -207,7 +207,6 @@ async def set_fan_power(request: PowerRequest):
         power = senseme_client.get_fan_power()
         
         # Update cached fan_states immediately for responsive UI (thread-safe)
-        global fan_states
         with fan_states_lock:
             fan_states["power"] = power
         
@@ -243,7 +242,6 @@ async def set_fan_speed(request: SpeedRequest):
         speed = senseme_client.get_fan_speed()
         
         # Update cached fan_states immediately for responsive UI (thread-safe)
-        global fan_states
         with fan_states_lock:
             fan_states["speed"] = speed
         
@@ -279,7 +277,6 @@ async def set_fan_whoosh(request: WhooshRequest):
         whoosh = senseme_client.get_fan_whoosh()
         
         # Update cached fan_states immediately for responsive UI (thread-safe)
-        global fan_states
         with fan_states_lock:
             fan_states["whoosh"] = whoosh
         
@@ -315,7 +312,6 @@ async def set_light_power(request: LightPowerRequest):
         power = senseme_client.get_light_power()
         
         # Update cached fan_states immediately for responsive UI (thread-safe)
-        global fan_states
         with fan_states_lock:
             fan_states["light_power"] = power
         
@@ -351,7 +347,6 @@ async def set_light_level(request: LightLevelRequest):
         level = senseme_client.get_light_level()
         
         # Update cached fan_states immediately for responsive UI (thread-safe)
-        global fan_states
         with fan_states_lock:
             fan_states["light_level"] = level
         
