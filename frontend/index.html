@@ -260,6 +260,7 @@
             height: 50px;
             background: #667eea;
             border-radius: 2px;
+            /* transform-origin: center of knob (75px from top of indicator) */
             transform-origin: center 60px;
             transition: transform 0.1s ease;
         }
@@ -458,10 +459,7 @@
             const knob = document.getElementById('lightKnob');
             const indicator = document.getElementById('lightKnobIndicator');
             
-            let startAngle = 0;
-            let currentAngle = -135; // Start at minimum position
-            
-            function updateKnobRotation(angle) {
+            function setIndicatorRotation(angle) {
                 // Constrain angle between -135 and 135 degrees (270 degree range)
                 angle = Math.max(-135, Math.min(135, angle));
                 indicator.style.transform = `translateX(-50%) rotate(${angle}deg)`;
@@ -472,20 +470,24 @@
                 return value;
             }
             
-            function handleMouseMove(e) {
-                if (!isDraggingKnob || currentLightPower === 'OFF') return;
-                
+            function calculateAngleFromPosition(clientX, clientY) {
                 const rect = knob.getBoundingClientRect();
                 const centerX = rect.left + rect.width / 2;
                 const centerY = rect.top + rect.height / 2;
                 
-                const dx = e.clientX - centerX;
-                const dy = e.clientY - centerY;
+                const dx = clientX - centerX;
+                const dy = clientY - centerY;
                 
                 let angle = Math.atan2(dy, dx) * (180 / Math.PI);
                 angle = angle + 90; // Adjust for top-centered indicator
+                return angle;
+            }
+            
+            function handleMouseMove(e) {
+                if (!isDraggingKnob || currentLightPower === 'OFF') return;
                 
-                const value = updateKnobRotation(angle);
+                const angle = calculateAngleFromPosition(e.clientX, e.clientY);
+                const value = setIndicatorRotation(angle);
                 document.getElementById('lightKnobValue').textContent = value;
             }
             
@@ -518,17 +520,8 @@
                 e.preventDefault();
                 
                 const touch = e.touches[0];
-                const rect = knob.getBoundingClientRect();
-                const centerX = rect.left + rect.width / 2;
-                const centerY = rect.top + rect.height / 2;
-                
-                const dx = touch.clientX - centerX;
-                const dy = touch.clientY - centerY;
-                
-                let angle = Math.atan2(dy, dx) * (180 / Math.PI);
-                angle = angle + 90;
-                
-                const value = updateKnobRotation(angle);
+                const angle = calculateAngleFromPosition(touch.clientX, touch.clientY);
+                const value = setIndicatorRotation(angle);
                 document.getElementById('lightKnobValue').textContent = value;
             });
             
