@@ -17,6 +17,9 @@ logger = logging.getLogger(__name__)
 class SenseMeClient:
     """Client for communicating with BigAssFan Haiku fans using the SenseMe protocol."""
     
+    # Default light level when turning light on
+    DEFAULT_LIGHT_LEVEL = 16
+    
     def __init__(self, fan_ip: str, port: int = 31415, fan_name: Optional[str] = None):
         self.fan_ip = fan_ip
         self.port = port
@@ -24,7 +27,7 @@ class SenseMeClient:
         self.connected = False
         self._lock = threading.Lock()
         self.fan_name: Optional[str] = fan_name  # Can be pre-configured or discovered
-        self._last_light_level: int = 16  # Default brightness when turning light on
+        self._last_light_level: int = self.DEFAULT_LIGHT_LEVEL  # Brightness when turning light on
         
     def connect(self) -> bool:
         """Establish UDP socket for the fan."""
@@ -190,7 +193,7 @@ class SenseMeClient:
         
         This method controls the light by setting the brightness level:
         - OFF: Sets level to 0
-        - ON: Sets level to the last known non-zero level (or default of 16)
+        - ON: Sets level to the last known non-zero level (or default)
         
         This makes the light behave consistently with the fan, where power
         is effectively controlled by the level setting.
@@ -198,7 +201,7 @@ class SenseMeClient:
         if state == "OFF":
             # Before turning off, get current level to remember it
             current_level = self.get_light_level()
-            if current_level and current_level > 0:
+            if current_level is not None and current_level > 0:
                 self._last_light_level = current_level
             # Turn off by setting level to 0
             return self.set_light_level(0)
