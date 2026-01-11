@@ -33,6 +33,8 @@ This guide explains how to deploy the Haiku Fan MQTT Bridge using Portainer.
    FAN_IP=192.168.1.100          # Replace with your fan's IP
    MQTT_BROKER=mosquitto
    MQTT_PORT=1883
+   MQTT_USER=                    # Optional: MQTT username (leave empty for no auth)
+   MQTT_PASS=                    # Optional: MQTT password (leave empty for no auth)
    POLL_INTERVAL=30
    ```
 
@@ -61,6 +63,8 @@ This guide explains how to deploy the Haiku Fan MQTT Bridge using Portainer.
    FAN_IP=192.168.1.100          # Replace with your fan's IP
    MQTT_BROKER=mosquitto
    MQTT_PORT=1883
+   MQTT_USER=                    # Optional: MQTT username (leave empty for no auth)
+   MQTT_PASS=                    # Optional: MQTT password (leave empty for no auth)
    POLL_INTERVAL=30
    ```
 
@@ -75,6 +79,8 @@ This guide explains how to deploy the Haiku Fan MQTT Bridge using Portainer.
 | `FAN_IP` | IP address of your Haiku fan | 192.168.1.100 | Yes |
 | `MQTT_BROKER` | MQTT broker hostname | mosquitto | Yes |
 | `MQTT_PORT` | MQTT broker port | 1883 | No |
+| `MQTT_USER` | MQTT username for authentication | (empty) | No |
+| `MQTT_PASS` | MQTT password for authentication | (empty) | No |
 | `POLL_INTERVAL` | Polling interval in seconds | 30 | No |
 
 ## Post-Deployment Verification

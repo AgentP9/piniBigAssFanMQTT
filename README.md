@@ -111,6 +111,8 @@ Configure these variables in your `.env` file or through Portainer:
 - `FAN_NAME`: Fan name (optional - leave empty to auto-discover; example: "Master Bedroom")
 - `MQTT_BROKER`: MQTT broker hostname (optional - leave empty to disable MQTT; default: mosquitto)
 - `MQTT_PORT`: MQTT broker port (default: 1883)
+- `MQTT_USER`: MQTT username for authentication (optional - leave empty for no authentication)
+- `MQTT_PASS`: MQTT password for authentication (optional - leave empty for no authentication)
 - `POLL_INTERVAL`: How often to poll fan state in seconds (default: 30)
 
 **Note**: If `MQTT_BROKER` is not set or is empty, the system will operate without MQTT publishing. The REST API and web interface will continue to function normally.
