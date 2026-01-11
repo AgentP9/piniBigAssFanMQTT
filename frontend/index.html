@@ -239,7 +239,7 @@
             margin-bottom: 20px;
         }
 
-        /* Vertical layout for button + knob */
+        /* Vertical layout: buttons on top, knob below */
         .horizontal-control {
             display: flex;
             flex-direction: column;
@@ -704,7 +704,14 @@
             }
             
             // Mouse events on the knob wrapper for better interaction
-            const knobWrapper = knob.parentElement;
+            const wrapperId = knobId + 'Wrapper';
+            const knobWrapper = document.getElementById(wrapperId);
+            
+            if (!knobWrapper) {
+                console.error(`Knob wrapper element not found: ${wrapperId}`);
+                return;
+            }
+            
             knobWrapper.addEventListener('mousedown', function(e) {
                 if (isDisabledFn()) return;
                 isDragging = true;
