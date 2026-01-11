@@ -700,7 +700,7 @@
                     updateKnobDisplay(currentLightLevel);
                 }
 
-                if (state.light_power) {
+                if (state.light_power !== undefined && state.light_power !== null) {
                     currentLightPower = state.light_power;
                     updateLightToggleButton(currentLightPower);
                     updateKnobDisplay(currentLightLevel);
@@ -823,7 +823,7 @@
         }
 
         async function setLightLevel(level) {
-            if (currentLightPower === 'OFF') {
+            if (isLightInteractionDisabled()) {
                 return; // Don't allow changing level when light is off
             }
             
