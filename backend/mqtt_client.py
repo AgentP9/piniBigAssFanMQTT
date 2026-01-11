@@ -12,10 +12,13 @@ logger = logging.getLogger(__name__)
 class MQTTPublisher:
     """MQTT client for publishing fan states."""
     
-    def __init__(self, broker_host: str, broker_port: int = 1883, base_topic: str = "haiku_fan"):
+    def __init__(self, broker_host: str, broker_port: int = 1883, base_topic: str = "haiku_fan", 
+                 username: Optional[str] = None, password: Optional[str] = None):
         self.broker_host = broker_host
         self.broker_port = broker_port
         self.base_topic = base_topic
+        self.username = username
+        self.password = password
         self.client: Optional[mqtt.Client] = None
         self.connected = False
         
@@ -26,9 +29,15 @@ class MQTTPublisher:
             self.client.on_connect = self._on_connect
             self.client.on_disconnect = self._on_disconnect
             
+            # Set username and password if provided
+            if self.username and self.password:
+                self.client.username_pw_set(self.username, self.password)
+                logger.info(f"Connecting to MQTT broker at {self.broker_host}:{self.broker_port} with authentication")
+            else:
+                logger.info(f"Connecting to MQTT broker at {self.broker_host}:{self.broker_port} without authentication")
+            
             self.client.connect(self.broker_host, self.broker_port, 60)
             self.client.loop_start()
-            logger.info(f"Connecting to MQTT broker at {self.broker_host}:{self.broker_port}")
             return True
         except Exception as e:
             logger.error(f"Failed to connect to MQTT broker: {e}")

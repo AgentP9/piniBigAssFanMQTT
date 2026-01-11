@@ -31,6 +31,8 @@ FAN_IP = os.getenv("FAN_IP", "192.168.1.100")
 FAN_NAME = os.getenv("FAN_NAME", "")  # Optional: Fan name, will be discovered if not set
 MQTT_BROKER = os.getenv("MQTT_BROKER", "")  # Empty string means MQTT disabled
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
+MQTT_USER = os.getenv("MQTT_USER", "")  # Optional: MQTT username
+MQTT_PASS = os.getenv("MQTT_PASS", "")  # Optional: MQTT password
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "30"))
 
 # Global instances
@@ -87,7 +89,12 @@ async def lifespan(app: FastAPI):
     # Initialize MQTT publisher only if broker is configured
     if MQTT_BROKER:
         logger.info(f"MQTT Broker: {MQTT_BROKER}:{MQTT_PORT}")
-        mqtt_publisher = MQTTPublisher(MQTT_BROKER, MQTT_PORT)
+        if MQTT_USER:
+            logger.info(f"MQTT Authentication: Enabled (User: {MQTT_USER})")
+            mqtt_publisher = MQTTPublisher(MQTT_BROKER, MQTT_PORT, username=MQTT_USER, password=MQTT_PASS)
+        else:
+            logger.info("MQTT Authentication: Disabled")
+            mqtt_publisher = MQTTPublisher(MQTT_BROKER, MQTT_PORT)
         mqtt_publisher.connect()
     else:
         logger.info("MQTT Broker not configured - MQTT publishing disabled")
