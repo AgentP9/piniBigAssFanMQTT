@@ -378,7 +378,7 @@
                     throw new Error('Failed to set fan power');
                 }
 
-                setTimeout(updateState, 500);
+                setTimeout(updateState, 1000);
             } catch (error) {
                 showError('Failed to set fan power: ' + error.message);
             }
@@ -400,7 +400,7 @@
                     throw new Error('Failed to set fan speed');
                 }
 
-                setTimeout(updateState, 500);
+                setTimeout(updateState, 1000);
             } catch (error) {
                 showError('Failed to set fan speed: ' + error.message);
             }
@@ -420,7 +420,7 @@
                     throw new Error('Failed to set whoosh mode');
                 }
 
-                setTimeout(updateState, 500);
+                setTimeout(updateState, 1000);
             } catch (error) {
                 showError('Failed to set whoosh mode: ' + error.message);
             }
@@ -440,7 +440,7 @@
                     throw new Error('Failed to set light power');
                 }
 
-                setTimeout(updateState, 500);
+                setTimeout(updateState, 1000);
             } catch (error) {
                 showError('Failed to set light power: ' + error.message);
             }
@@ -462,7 +462,7 @@
                     throw new Error('Failed to set light level');
                 }
 
-                setTimeout(updateState, 500);
+                setTimeout(updateState, 1000);
             } catch (error) {
                 showError('Failed to set light level: ' + error.message);
             }

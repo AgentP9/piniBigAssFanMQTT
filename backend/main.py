@@ -198,7 +198,7 @@ async def set_fan_power(request: PowerRequest):
     
     if senseme_client.set_fan_power(request.state):
         # Update state immediately
-        time.sleep(0.5)
+        time.sleep(1)
         if mqtt_publisher and mqtt_publisher.connected:
             power = senseme_client.get_fan_power()
             mqtt_publisher.publish_state("power", power)
@@ -228,7 +228,7 @@ async def set_fan_speed(request: SpeedRequest):
     
     if senseme_client.set_fan_speed(request.speed):
         # Update state immediately
-        time.sleep(0.5)
+        time.sleep(1)
         if mqtt_publisher and mqtt_publisher.connected:
             speed = senseme_client.get_fan_speed()
             mqtt_publisher.publish_state("speed", speed)
@@ -258,7 +258,7 @@ async def set_fan_whoosh(request: WhooshRequest):
     
     if senseme_client.set_fan_whoosh(request.state):
         # Update state immediately
-        time.sleep(0.5)
+        time.sleep(1)
         if mqtt_publisher and mqtt_publisher.connected:
             whoosh = senseme_client.get_fan_whoosh()
             mqtt_publisher.publish_state("whoosh", whoosh)
@@ -288,7 +288,7 @@ async def set_light_power(request: LightPowerRequest):
     
     if senseme_client.set_light_power(request.state):
         # Update state immediately
-        time.sleep(0.5)
+        time.sleep(1)
         if mqtt_publisher and mqtt_publisher.connected:
             power = senseme_client.get_light_power()
             mqtt_publisher.publish_state("light_power", power)
@@ -318,7 +318,7 @@ async def set_light_level(request: LightLevelRequest):
     
     if senseme_client.set_light_level(request.level):
         # Update state immediately
-        time.sleep(0.5)
+        time.sleep(1)
         if mqtt_publisher and mqtt_publisher.connected:
             level = senseme_client.get_light_level()
             mqtt_publisher.publish_state("light_level", level)
