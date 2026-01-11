@@ -166,12 +166,55 @@
             margin-bottom: 20px;
         }
 
+        /* Horizontal layout for button + knob */
+        .horizontal-control {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+
+        .control-left {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+            min-width: 120px;
+        }
+
+        .control-left > div {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-left label {
+            font-size: 0.9em;
+            color: #555;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .control-right {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+        }
+
+        .control-right label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            text-align: center;
+        }
+
         /* Knob control styles */
         .knob-container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
         }
 
         .knob {
@@ -329,28 +372,27 @@
         <div class="control-section">
             <h2>Fan Control</h2>
             
-            <div class="control-group">
-                <label>Power</label>
-                <div class="button-container">
-                    <button id="fanPowerBtn" class="toggle-button" onclick="toggleFanPower()" aria-label="Toggle fan power">🌀</button>
-                </div>
-            </div>
-
-            <div class="control-group">
-                <label>Speed</label>
-                <div class="knob-container">
-                    <div class="knob" id="fanSpeedKnob">
-                        <div class="knob-indicator" id="fanSpeedKnobIndicator"></div>
-                        <div class="knob-value" id="fanSpeedKnobValue">0</div>
+            <div class="horizontal-control">
+                <div class="control-left">
+                    <div>
+                        <label>Power</label>
+                        <button id="fanPowerBtn" class="toggle-button" onclick="toggleFanPower()" aria-label="Toggle fan power">🌀</button>
                     </div>
-                    <div class="knob-label">0 - 7</div>
+                    <div>
+                        <label>Whoosh Mode</label>
+                        <button id="whooshBtn" class="toggle-button" onclick="toggleWhoosh()" aria-label="Toggle whoosh mode">💨</button>
+                    </div>
                 </div>
-            </div>
-
-            <div class="control-group">
-                <label>Whoosh Mode</label>
-                <div class="button-container">
-                    <button id="whooshBtn" class="toggle-button" onclick="toggleWhoosh()" aria-label="Toggle whoosh mode">💨</button>
+                
+                <div class="control-right">
+                    <div class="knob-container">
+                        <label>Speed</label>
+                        <div class="knob" id="fanSpeedKnob">
+                            <div class="knob-indicator" id="fanSpeedKnobIndicator"></div>
+                            <div class="knob-value" id="fanSpeedKnobValue">0</div>
+                        </div>
+                        <div class="knob-label">0 - 7</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -359,21 +401,23 @@
         <div class="control-section">
             <h2>Light Control</h2>
             
-            <div class="control-group">
-                <label>Power</label>
-                <div class="button-container">
-                    <button id="lightToggleBtn" class="toggle-button" onclick="toggleLight()" aria-label="Toggle light power">💡</button>
-                </div>
-            </div>
-
-            <div class="control-group">
-                <label>Brightness</label>
-                <div class="knob-container">
-                    <div class="knob" id="lightKnob">
-                        <div class="knob-indicator" id="lightKnobIndicator"></div>
-                        <div class="knob-value" id="lightKnobValue">0</div>
+            <div class="horizontal-control">
+                <div class="control-left">
+                    <div>
+                        <label>Power</label>
+                        <button id="lightToggleBtn" class="toggle-button" onclick="toggleLight()" aria-label="Toggle light power">💡</button>
                     </div>
-                    <div class="knob-label">0 - 16</div>
+                </div>
+                
+                <div class="control-right">
+                    <div class="knob-container">
+                        <label>Brightness</label>
+                        <div class="knob" id="lightKnob">
+                            <div class="knob-indicator" id="lightKnobIndicator"></div>
+                            <div class="knob-value" id="lightKnobValue">0</div>
+                        </div>
+                        <div class="knob-label">0 - 16</div>
+                    </div>
                 </div>
             </div>
         </div>
