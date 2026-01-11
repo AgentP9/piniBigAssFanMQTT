@@ -37,6 +37,7 @@ POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "30"))
 senseme_client: Optional[SenseMeClient] = None
 mqtt_publisher: Optional[MQTTPublisher] = None
 fan_states: Dict[str, Any] = {}
+fan_states_lock = threading.Lock()  # Lock for thread-safe access to fan_states
 polling_thread: Optional[threading.Thread] = None
 polling_active = False
 
@@ -50,7 +51,10 @@ def poll_fan_states():
         try:
             if senseme_client:
                 new_states = senseme_client.get_all_states()
-                fan_states = new_states
+                
+                # Thread-safe update of fan_states
+                with fan_states_lock:
+                    fan_states = new_states
                 
                 if mqtt_publisher and mqtt_publisher.connected:
                     mqtt_publisher.publish_all_states(new_states)
@@ -172,9 +176,10 @@ async def health():
 @app.get("/api/fan/state")
 async def get_fan_state():
     """Get current fan state."""
-    if not fan_states:
-        raise HTTPException(status_code=503, detail="Fan states not yet available")
-    return fan_states
+    with fan_states_lock:
+        if not fan_states:
+            raise HTTPException(status_code=503, detail="Fan states not yet available")
+        return fan_states.copy()  # Return a copy to avoid concurrent modification
 
 
 @app.get("/api/fan/power")
@@ -201,9 +206,10 @@ async def set_fan_power(request: PowerRequest):
         time.sleep(1)
         power = senseme_client.get_fan_power()
         
-        # Update cached fan_states immediately for responsive UI
+        # Update cached fan_states immediately for responsive UI (thread-safe)
         global fan_states
-        fan_states["power"] = power
+        with fan_states_lock:
+            fan_states["power"] = power
         
         if mqtt_publisher and mqtt_publisher.connected:
             mqtt_publisher.publish_state("power", power)
@@ -236,9 +242,10 @@ async def set_fan_speed(request: SpeedRequest):
         time.sleep(1)
         speed = senseme_client.get_fan_speed()
         
-        # Update cached fan_states immediately for responsive UI
+        # Update cached fan_states immediately for responsive UI (thread-safe)
         global fan_states
-        fan_states["speed"] = speed
+        with fan_states_lock:
+            fan_states["speed"] = speed
         
         if mqtt_publisher and mqtt_publisher.connected:
             mqtt_publisher.publish_state("speed", speed)
@@ -271,9 +278,10 @@ async def set_fan_whoosh(request: WhooshRequest):
         time.sleep(1)
         whoosh = senseme_client.get_fan_whoosh()
         
-        # Update cached fan_states immediately for responsive UI
+        # Update cached fan_states immediately for responsive UI (thread-safe)
         global fan_states
-        fan_states["whoosh"] = whoosh
+        with fan_states_lock:
+            fan_states["whoosh"] = whoosh
         
         if mqtt_publisher and mqtt_publisher.connected:
             mqtt_publisher.publish_state("whoosh", whoosh)
@@ -306,9 +314,10 @@ async def set_light_power(request: LightPowerRequest):
         time.sleep(1)
         power = senseme_client.get_light_power()
         
-        # Update cached fan_states immediately for responsive UI
+        # Update cached fan_states immediately for responsive UI (thread-safe)
         global fan_states
-        fan_states["light_power"] = power
+        with fan_states_lock:
+            fan_states["light_power"] = power
         
         if mqtt_publisher and mqtt_publisher.connected:
             mqtt_publisher.publish_state("light_power", power)
@@ -341,9 +350,10 @@ async def set_light_level(request: LightLevelRequest):
         time.sleep(1)
         level = senseme_client.get_light_level()
         
-        # Update cached fan_states immediately for responsive UI
+        # Update cached fan_states immediately for responsive UI (thread-safe)
         global fan_states
-        fan_states["light_level"] = level
+        with fan_states_lock:
+            fan_states["light_level"] = level
         
         if mqtt_publisher and mqtt_publisher.connected:
             mqtt_publisher.publish_state("light_level", level)
