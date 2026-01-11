@@ -110,11 +110,6 @@
             font-weight: 500;
         }
 
-        .button-group {
-            display: flex;
-            gap: 10px;
-        }
-
         button {
             flex: 1;
             padding: 12px 20px;
@@ -126,65 +121,9 @@
             transition: all 0.3s ease;
         }
 
-        button.primary {
-            background: #667eea;
-            color: white;
-        }
-
-        button.primary:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        button.secondary {
-            background: #e9ecef;
-            color: #333;
-        }
-
-        button.secondary:hover {
-            background: #dee2e6;
-        }
-
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-        }
-
-        input[type="range"] {
-            width: 100%;
-            height: 8px;
-            border-radius: 5px;
-            background: #dee2e6;
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #667eea;
-            cursor: pointer;
-        }
-
-        input[type="range"]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #667eea;
-            cursor: pointer;
-            border: none;
-        }
-
-        .slider-value {
-            text-align: center;
-            margin-top: 10px;
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #667eea;
         }
 
         /* Toggle button styles */
@@ -676,24 +615,6 @@
             setTimeout(() => {
                 errorDiv.style.display = 'none';
             }, 5000);
-        }
-
-        function updateButtonStates(onBtnId, offBtnId, currentState) {
-            const onBtn = document.getElementById(onBtnId);
-            const offBtn = document.getElementById(offBtnId);
-            
-            // Ensure both buttons exist before updating
-            if (!onBtn || !offBtn) {
-                return;
-            }
-            
-            if (currentState === 'ON') {
-                onBtn.className = 'primary';
-                offBtn.className = 'secondary';
-            } else if (currentState === 'OFF') {
-                onBtn.className = 'secondary';
-                offBtn.className = 'primary';
-            }
         }
 
         function updateLightToggleButton(state) {
