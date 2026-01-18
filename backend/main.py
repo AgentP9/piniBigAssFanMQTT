@@ -104,7 +104,14 @@ def update_state_and_publish(state_key: str, get_state_func):
 
 
 def handle_mqtt_fan_power(payload: str):
-    """Handle MQTT command for fan power."""
+    """Handle MQTT command for fan power.
+    
+    Args:
+        payload: MQTT message payload. Expected values: "ON" or "OFF" (case-insensitive)
+    
+    On success, updates the cached fan state and publishes the new state to MQTT status topic.
+    Logs warnings for invalid payloads and errors if the command fails.
+    """
     try:
         payload_upper = payload.upper()
         if payload_upper in ["ON", "OFF"]:
@@ -122,7 +129,14 @@ def handle_mqtt_fan_power(payload: str):
 
 
 def handle_mqtt_fan_speed(payload: str):
-    """Handle MQTT command for fan speed."""
+    """Handle MQTT command for fan speed.
+    
+    Args:
+        payload: MQTT message payload. Expected values: "0" to "7" as string
+    
+    On success, updates the cached fan state and publishes the new state to MQTT status topic.
+    Logs warnings for out-of-range values or invalid formats, and errors if the command fails.
+    """
     try:
         speed = int(payload)
         if 0 <= speed <= 7:
@@ -142,7 +156,14 @@ def handle_mqtt_fan_speed(payload: str):
 
 
 def handle_mqtt_light_power(payload: str):
-    """Handle MQTT command for light power."""
+    """Handle MQTT command for light power.
+    
+    Args:
+        payload: MQTT message payload. Expected values: "ON" or "OFF" (case-insensitive)
+    
+    On success, updates the cached light state and publishes the new state to MQTT status topic.
+    Logs warnings for invalid payloads and errors if the command fails.
+    """
     try:
         payload_upper = payload.upper()
         if payload_upper in ["ON", "OFF"]:
@@ -160,7 +181,14 @@ def handle_mqtt_light_power(payload: str):
 
 
 def handle_mqtt_light_level(payload: str):
-    """Handle MQTT command for light level."""
+    """Handle MQTT command for light level.
+    
+    Args:
+        payload: MQTT message payload. Expected values: "0" to "16" as string
+    
+    On success, updates the cached light state and publishes the new state to MQTT status topic.
+    Logs warnings for out-of-range values or invalid formats, and errors if the command fails.
+    """
     try:
         level = int(payload)
         if 0 <= level <= 16:
