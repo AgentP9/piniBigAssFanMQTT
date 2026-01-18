@@ -337,9 +337,13 @@ class LightLevelRequest(BaseModel):
 
 
 # API Routes
-@app.get("/")
+@app.get("/", tags=["General"])
 async def root():
-    """Root endpoint."""
+    """
+    Root endpoint - Service information.
+    
+    Returns basic information about the service including name, version, and status.
+    """
     return {
         "service": "Haiku Fan MQTT Bridge",
         "version": "1.0.0",
@@ -347,9 +351,19 @@ async def root():
     }
 
 
-@app.get("/health")
+@app.get("/health", tags=["General"])
 async def health():
-    """Health check endpoint."""
+    """
+    Health check endpoint.
+    
+    Check the health status of the service including:
+    - Overall service status
+    - Fan connection status (connected/disconnected)
+    - MQTT broker connection status (if configured)
+    
+    Returns:
+        dict: Health status with connection states
+    """
     return {
         "status": "healthy",
         "fan_connected": senseme_client.connected if senseme_client else False,
@@ -357,18 +371,43 @@ async def health():
     }
 
 
-@app.get("/api/fan/state")
+@app.get("/api/fan/state", tags=["Fan"])
 async def get_fan_state():
-    """Get current fan state."""
+    """
+    Get complete fan state.
+    
+    Returns all current fan states including:
+    - name: Fan name
+    - power: Fan power state (ON/OFF)
+    - speed: Fan speed (0-7, where 0=OFF)
+    - light_power: Light power state (ON/OFF)
+    - light_level: Light brightness level (0-16)
+    
+    Returns:
+        dict: Complete fan state
+        
+    Raises:
+        HTTPException: 503 if fan states are not yet available
+    """
     with fan_states_lock:
         if not fan_states:
             raise HTTPException(status_code=503, detail="Fan states not yet available")
         return fan_states.copy()  # Return a copy to avoid concurrent modification
 
 
-@app.get("/api/fan/power")
+@app.get("/api/fan/power", tags=["Fan"])
 async def get_fan_power():
-    """Get fan power state."""
+    """
+    Get fan power state.
+    
+    Returns the current power state of the fan (ON or OFF).
+    
+    Returns:
+        dict: {"power": "ON"|"OFF"}
+        
+    Raises:
+        HTTPException: 503 if unable to get fan power state
+    """
     if not senseme_client:
         raise HTTPException(status_code=503, detail="SenseMe client not initialized")
     
@@ -379,9 +418,23 @@ async def get_fan_power():
     return {"power": power}
 
 
-@app.post("/api/fan/power")
+@app.post("/api/fan/power", tags=["Fan"])
 async def set_fan_power(request: PowerRequest):
-    """Set fan power state."""
+    """
+    Set fan power state.
+    
+    Turn the fan ON or OFF.
+    
+    Args:
+        request: PowerRequest with state field ("ON" or "OFF")
+        
+    Returns:
+        dict: {"success": true, "power": "ON"|"OFF"}
+        
+    Raises:
+        HTTPException: 503 if SenseMe client not initialized
+        HTTPException: 500 if failed to set fan power
+    """
     if not senseme_client:
         raise HTTPException(status_code=503, detail="SenseMe client not initialized")
     
@@ -401,9 +454,19 @@ async def set_fan_power(request: PowerRequest):
         raise HTTPException(status_code=500, detail="Failed to set fan power")
 
 
-@app.get("/api/fan/speed")
+@app.get("/api/fan/speed", tags=["Fan"])
 async def get_fan_speed():
-    """Get fan speed."""
+    """
+    Get fan speed.
+    
+    Returns the current fan speed (0-7, where 0 means fan is OFF).
+    
+    Returns:
+        dict: {"speed": 0-7}
+        
+    Raises:
+        HTTPException: 503 if unable to get fan speed
+    """
     if not senseme_client:
         raise HTTPException(status_code=503, detail="SenseMe client not initialized")
     
@@ -414,9 +477,24 @@ async def get_fan_speed():
     return {"speed": speed}
 
 
-@app.post("/api/fan/speed")
+@app.post("/api/fan/speed", tags=["Fan"])
 async def set_fan_speed(request: SpeedRequest):
-    """Set fan speed."""
+    """
+    Set fan speed.
+    
+    Set the fan speed to a value between 0 and 7.
+    Note: Setting speed to 0 turns the fan OFF.
+    
+    Args:
+        request: SpeedRequest with speed field (0-7)
+        
+    Returns:
+        dict: {"success": true, "speed": 0-7}
+        
+    Raises:
+        HTTPException: 503 if SenseMe client not initialized
+        HTTPException: 500 if failed to set fan speed
+    """
     if not senseme_client:
         raise HTTPException(status_code=503, detail="SenseMe client not initialized")
     
@@ -436,9 +514,19 @@ async def set_fan_speed(request: SpeedRequest):
         raise HTTPException(status_code=500, detail="Failed to set fan speed")
 
 
-@app.get("/api/light/power")
+@app.get("/api/light/power", tags=["Light"])
 async def get_light_power():
-    """Get light power state."""
+    """
+    Get light power state.
+    
+    Returns the current power state of the light (ON or OFF).
+    
+    Returns:
+        dict: {"power": "ON"|"OFF"}
+        
+    Raises:
+        HTTPException: 503 if unable to get light power state
+    """
     if not senseme_client:
         raise HTTPException(status_code=503, detail="SenseMe client not initialized")
     
@@ -449,9 +537,27 @@ async def get_light_power():
     return {"power": power}
 
 
-@app.post("/api/light/power")
+@app.post("/api/light/power", tags=["Light"])
 async def set_light_power(request: LightPowerRequest):
-    """Set light power state."""
+    """
+    Set light power state.
+    
+    Turn the light ON or OFF.
+    - When turning ON: Light is set to level 2 (default brightness)
+    - When turning OFF: Light level is set to 0
+    
+    Both light_power and light_level states are published to MQTT when changed.
+    
+    Args:
+        request: LightPowerRequest with state field ("ON" or "OFF")
+        
+    Returns:
+        dict: {"success": true, "power": "ON"|"OFF"}
+        
+    Raises:
+        HTTPException: 503 if SenseMe client not initialized
+        HTTPException: 500 if failed to set light power
+    """
     if not senseme_client:
         raise HTTPException(status_code=503, detail="SenseMe client not initialized")
     
@@ -474,9 +580,19 @@ async def set_light_power(request: LightPowerRequest):
         raise HTTPException(status_code=500, detail="Failed to set light power")
 
 
-@app.get("/api/light/level")
+@app.get("/api/light/level", tags=["Light"])
 async def get_light_level():
-    """Get light brightness level."""
+    """
+    Get light brightness level.
+    
+    Returns the current brightness level of the light (0-16).
+    
+    Returns:
+        dict: {"level": 0-16}
+        
+    Raises:
+        HTTPException: 503 if unable to get light level
+    """
     if not senseme_client:
         raise HTTPException(status_code=503, detail="SenseMe client not initialized")
     
@@ -487,9 +603,24 @@ async def get_light_level():
     return {"level": level}
 
 
-@app.post("/api/light/level")
+@app.post("/api/light/level", tags=["Light"])
 async def set_light_level(request: LightLevelRequest):
-    """Set light brightness level."""
+    """
+    Set light brightness level.
+    
+    Set the light brightness to a value between 0 and 16.
+    Note: Setting level to 0 turns the light OFF.
+    
+    Args:
+        request: LightLevelRequest with level field (0-16)
+        
+    Returns:
+        dict: {"success": true, "level": 0-16}
+        
+    Raises:
+        HTTPException: 503 if SenseMe client not initialized
+        HTTPException: 500 if failed to set light level
+    """
     if not senseme_client:
         raise HTTPException(status_code=503, detail="SenseMe client not initialized")
     

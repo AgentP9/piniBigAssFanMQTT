@@ -57,6 +57,8 @@ This project provides a REST API and MQTT bridge for BigAssFan Haiku fans using 
 
 5. Access the web interface at: `http://localhost:1919`
 
+6. Access the API documentation (Swagger UI) at: `http://localhost:1919/docs`
+
 ### Installing as a PWA
 
 After accessing the web interface, you can install it as a Progressive Web App on your mobile device:
@@ -117,25 +119,43 @@ Configure these variables in your `.env` file or through Portainer:
 
 **Note**: If `MQTT_BROKER` is not set or is empty, the system will operate without MQTT publishing. The REST API and web interface will continue to function normally.
 
-## API Endpoints
+## API Documentation
 
-### Health Check
+### Interactive API Documentation (Swagger UI)
+
+Access the interactive API documentation at: **`http://localhost:1919/docs`**
+
+The Swagger UI provides:
+- Complete list of all API endpoints
+- Request/response schemas
+- Try-it-out functionality to test API calls directly from your browser
+- Detailed parameter descriptions and validation rules
+
+Alternative documentation formats:
+- **ReDoc**: `http://localhost:1919/redoc` - Alternative API documentation interface
+- **OpenAPI JSON**: `http://localhost:1919/openapi.json` - Raw OpenAPI specification
+
+### API Endpoints Summary
+
+#### Health Check
 - `GET /health` - Check service health and connection status
 
-### Fan State
-- `GET /api/fan/state` - Get all fan states
+#### Fan State
+- `GET /api/fan/state` - Get all fan states (name, power, speed, light_power, light_level)
 
-### Fan Control
+#### Fan Control
 - `GET /api/fan/power` - Get fan power state
 - `POST /api/fan/power` - Set fan power (body: `{"state": "ON|OFF"}`)
 - `GET /api/fan/speed` - Get fan speed
 - `POST /api/fan/speed` - Set fan speed (body: `{"speed": 0-7}`)
 
-### Light Control
+#### Light Control
 - `GET /api/light/power` - Get light power state
 - `POST /api/light/power` - Set light power (body: `{"state": "ON|OFF"}`)
 - `GET /api/light/level` - Get light brightness level
 - `POST /api/light/level` - Set light level (body: `{"level": 0-16}`)
+
+**Note**: For detailed request/response examples and to test the API interactively, use the Swagger UI at `/docs`
 
 ## MQTT Topics
 
