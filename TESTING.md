@@ -129,7 +129,35 @@ mosquitto_sub -h localhost -t "haiku_fan/#" -v
 
 You should see fan states being published every 30 seconds (or whatever POLL_INTERVAL is set to).
 
-### 7. Test Web Interface
+### 7. Test MQTT Subscription (Control via MQTT)
+
+```bash
+# Turn fan ON via MQTT
+docker compose exec mosquitto mosquitto_pub -t "haiku_fan/power/set" -m "ON"
+
+# Turn fan OFF via MQTT
+docker compose exec mosquitto mosquitto_pub -t "haiku_fan/power/set" -m "OFF"
+
+# Set fan speed via MQTT (0-7)
+docker compose exec mosquitto mosquitto_pub -t "haiku_fan/speed/set" -m "5"
+
+# Turn light ON via MQTT
+docker compose exec mosquitto mosquitto_pub -t "haiku_fan/light_power/set" -m "ON"
+
+# Set light brightness via MQTT (0-16)
+docker compose exec mosquitto mosquitto_pub -t "haiku_fan/light_level/set" -m "10"
+
+# Or use external MQTT client
+mosquitto_pub -h localhost -t "haiku_fan/power/set" -m "ON"
+mosquitto_pub -h localhost -t "haiku_fan/speed/set" -m "3"
+```
+
+After sending these commands, you should see:
+1. The fan/light state change immediately
+2. Updated status published back to status topics (e.g., `haiku_fan/power`)
+3. Log messages in the backend confirming the MQTT command was received and processed
+
+### 8. Test Web Interface
 
 1. Open http://localhost:1919 in your browser
 2. Verify that connection status shows "Connected"
@@ -138,6 +166,9 @@ You should see fan states being published every 30 seconds (or whatever POLL_INT
    - Fan speed slider
    - Light power on/off
    - Light brightness slider
+4. Verify that MQTT commands also update the web interface:
+   - Send an MQTT command (e.g., turn fan on via MQTT)
+   - Check that the web interface reflects the change after the next poll interval
 
 ## Troubleshooting
 
@@ -182,14 +213,19 @@ You should see fan states being published every 30 seconds (or whatever POLL_INT
 
 - [ ] Health endpoint returns correct status
 - [ ] Can retrieve fan state
-- [ ] Can turn fan on/off
-- [ ] Can change fan speed (0-7)
-- [ ] Can turn light on/off
-- [ ] Can change light brightness (0-16)
-- [ ] MQTT messages are published
+- [ ] Can turn fan on/off via API
+- [ ] Can change fan speed (0-7) via API
+- [ ] Can turn light on/off via API
+- [ ] Can change light brightness (0-16) via API
+- [ ] MQTT status messages are published
+- [ ] Can turn fan on/off via MQTT
+- [ ] Can change fan speed (0-7) via MQTT
+- [ ] Can turn light on/off via MQTT
+- [ ] Can change light brightness (0-16) via MQTT
 - [ ] Web interface loads successfully
 - [ ] Web interface shows connection status correctly
 - [ ] All web interface controls work
+- [ ] MQTT commands update web interface state
 
 ## Performance Testing
 
