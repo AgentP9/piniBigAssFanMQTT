@@ -8,6 +8,7 @@ Responses are received in the format: (FanName;COMMAND;PARAMETERS)
 """
 import socket
 import threading
+import time
 from typing import Optional, Dict, Any
 import logging
 
@@ -18,7 +19,7 @@ class SenseMeClient:
     """Client for communicating with BigAssFan Haiku fans using the SenseMe protocol."""
     
     # Default light level when turning light on
-    DEFAULT_LIGHT_LEVEL = 5
+    DEFAULT_LIGHT_LEVEL = 2
     
     def __init__(self, fan_ip: str, port: int = 31415, fan_name: Optional[str] = None):
         self.fan_ip = fan_ip
@@ -88,11 +89,12 @@ class SenseMeClient:
         
         return None
     
-    def send_command(self, command: str) -> Optional[str]:
+    def send_command(self, command: str, retries: int = 3) -> Optional[str]:
         """Send a command to the fan and return the response.
         
         Args:
             command: Command without fan name prefix (e.g., "FAN;PWR;GET")
+            retries: Number of retry attempts if command fails (default: 3)
         
         Returns:
             Response string or None if failed
@@ -102,24 +104,44 @@ class SenseMeClient:
                 if not self.connect():
                     return None
             
-            try:
-                # Commands should be formatted as per SenseMe protocol
-                # Format: <FanName;COMMAND>
-                full_command = f"<{self.fan_name};{command}>"
-                logger.debug(f"Sending command: {full_command}")
-                
-                # Send UDP datagram
-                self.socket.sendto(full_command.encode('utf-8'), (self.fan_ip, self.port))
-                
-                # Receive response
-                data, addr = self.socket.recvfrom(1024)
-                response = data.decode('utf-8').strip()
-                logger.debug(f"Received response: {response}")
-                return response
-            except Exception as e:
-                logger.error(f"Error sending command '{command}': {e}")
-                self.disconnect()
-                return None
+            for attempt in range(retries):
+                try:
+                    # Commands should be formatted as per SenseMe protocol
+                    # Format: <FanName;COMMAND>
+                    full_command = f"<{self.fan_name};{command}>"
+                    logger.debug(f"Sending command (attempt {attempt + 1}/{retries}): {full_command}")
+                    
+                    # Send UDP datagram
+                    self.socket.sendto(full_command.encode('utf-8'), (self.fan_ip, self.port))
+                    
+                    # Receive response
+                    data, addr = self.socket.recvfrom(1024)
+                    response = data.decode('utf-8').strip()
+                    logger.debug(f"Received response: {response}")
+                    return response
+                except socket.timeout:
+                    logger.warning(f"Command timeout (attempt {attempt + 1}/{retries}): {command}")
+                    if attempt < retries - 1:
+                        # Wait before retry with exponential backoff: 0.5s, 1.0s, 1.5s
+                        backoff_delay = 0.5 * (attempt + 1)
+                        time.sleep(backoff_delay)
+                        continue
+                    else:
+                        logger.error(f"Command failed after {retries} attempts: {command}")
+                        self.disconnect()
+                        return None
+                except Exception as e:
+                    logger.error(f"Error sending command '{command}' (attempt {attempt + 1}/{retries}): {e}")
+                    if attempt < retries - 1:
+                        # Wait before retry with exponential backoff: 0.5s, 1.0s, 1.5s
+                        backoff_delay = 0.5 * (attempt + 1)
+                        time.sleep(backoff_delay)
+                        continue
+                    else:
+                        self.disconnect()
+                        return None
+            
+            return None
     
     def get_fan_name(self) -> Optional[str]:
         """Get the fan name."""

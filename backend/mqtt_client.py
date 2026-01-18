@@ -143,12 +143,20 @@ class MQTTPublisher:
             if topic.startswith(f"{self.base_topic}/") and topic.endswith("/set"):
                 command = topic[len(f"{self.base_topic}/"):-len("/set")]
                 
-                # Call the registered callback for this command
+                # Call the registered callback for this command in a separate thread
+                # to avoid blocking the MQTT client's network loop
                 if command in self.command_callbacks:
-                    self.command_callbacks[command](payload)
+                    import threading
+                    handler_thread = threading.Thread(
+                        target=self.command_callbacks[command],
+                        args=(payload,),
+                        daemon=True,
+                        name=f"mqtt_handler_{command}"
+                    )
+                    handler_thread.start()
                 else:
                     logger.warning(f"No callback registered for command: {command}")
             else:
                 logger.warning(f"Received message on unexpected topic: {topic}")
         except Exception as e:
-            logger.error(f"Error processing MQTT message: {e}")
+            logger.error(f"Error processing MQTT message: {e}", exc_info=True)

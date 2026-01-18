@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
@@ -25,6 +26,16 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Custom filter to exclude health check and state polling endpoints from access logs
+class EndpointFilter(logging.Filter):
+    """Filter out access logs for specific endpoints to reduce log spam."""
+    def filter(self, record: logging.LogRecord) -> bool:
+        # Exclude /api/health and /api/fan/state from access logs
+        return not any(endpoint in record.getMessage() for endpoint in ["/api/health", "/api/fan/state"])
+
+# Apply filter to uvicorn access logger
+logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
 
 # Configuration from environment variables
 FAN_IP = os.getenv("FAN_IP", "192.168.1.100")
@@ -116,16 +127,22 @@ def handle_mqtt_fan_power(payload: str):
         payload_upper = payload.upper()
         if payload_upper in ["ON", "OFF"]:
             logger.info(f"MQTT command: Set fan power to {payload_upper}")
-            if senseme_client and senseme_client.set_fan_power(payload_upper):
-                state = update_state_and_publish("power", senseme_client.get_fan_power)
-                if state:
-                    logger.info(f"Fan power set to {state} via MQTT")
+            if senseme_client:
+                success = senseme_client.set_fan_power(payload_upper)
+                if success:
+                    state = update_state_and_publish("power", senseme_client.get_fan_power)
+                    if state:
+                        logger.info(f"Fan power set to {state} via MQTT")
+                    else:
+                        logger.error("Failed to read fan power state after setting via MQTT")
+                else:
+                    logger.error(f"Failed to set fan power to {payload_upper} via MQTT - command returned False")
             else:
-                logger.error("Failed to set fan power via MQTT")
+                logger.error("SenseMe client not initialized")
         else:
             logger.warning(f"Invalid fan power value from MQTT: {payload}")
     except Exception as e:
-        logger.error(f"Error handling MQTT fan power command: {e}")
+        logger.error(f"Error handling MQTT fan power command: {e}", exc_info=True)
 
 
 def handle_mqtt_fan_speed(payload: str):
@@ -141,18 +158,24 @@ def handle_mqtt_fan_speed(payload: str):
         speed = int(payload)
         if 0 <= speed <= 7:
             logger.info(f"MQTT command: Set fan speed to {speed}")
-            if senseme_client and senseme_client.set_fan_speed(speed):
-                state = update_state_and_publish("speed", senseme_client.get_fan_speed)
-                if state is not None:
-                    logger.info(f"Fan speed set to {state} via MQTT")
+            if senseme_client:
+                success = senseme_client.set_fan_speed(speed)
+                if success:
+                    state = update_state_and_publish("speed", senseme_client.get_fan_speed)
+                    if state is not None:
+                        logger.info(f"Fan speed set to {state} via MQTT")
+                    else:
+                        logger.error("Failed to read fan speed state after setting via MQTT")
+                else:
+                    logger.error(f"Failed to set fan speed to {speed} via MQTT - command returned False")
             else:
-                logger.error("Failed to set fan speed via MQTT")
+                logger.error("SenseMe client not initialized")
         else:
             logger.warning(f"Invalid fan speed value from MQTT: {payload} (must be 0-7)")
     except ValueError:
         logger.warning(f"Invalid fan speed format from MQTT: {payload}")
     except Exception as e:
-        logger.error(f"Error handling MQTT fan speed command: {e}")
+        logger.error(f"Error handling MQTT fan speed command: {e}", exc_info=True)
 
 
 def handle_mqtt_light_power(payload: str):
@@ -162,22 +185,32 @@ def handle_mqtt_light_power(payload: str):
         payload: MQTT message payload. Expected values: "ON" or "OFF" (case-insensitive)
     
     On success, updates the cached light state and publishes the new state to MQTT status topic.
+    Also publishes the light_level since power changes affect the level (ON=2, OFF=0).
     Logs warnings for invalid payloads and errors if the command fails.
     """
     try:
         payload_upper = payload.upper()
         if payload_upper in ["ON", "OFF"]:
             logger.info(f"MQTT command: Set light power to {payload_upper}")
-            if senseme_client and senseme_client.set_light_power(payload_upper):
-                state = update_state_and_publish("light_power", senseme_client.get_light_power)
-                if state:
-                    logger.info(f"Light power set to {state} via MQTT")
+            if senseme_client:
+                success = senseme_client.set_light_power(payload_upper)
+                if success:
+                    # Update and publish light power state
+                    power_state = update_state_and_publish("light_power", senseme_client.get_light_power)
+                    # Also update and publish light level since it changes with power
+                    level_state = update_state_and_publish("light_level", senseme_client.get_light_level)
+                    if power_state:
+                        logger.info(f"Light power set to {power_state} via MQTT (level: {level_state})")
+                    else:
+                        logger.error("Failed to read light power state after setting via MQTT")
+                else:
+                    logger.error(f"Failed to set light power to {payload_upper} via MQTT - command returned False")
             else:
-                logger.error("Failed to set light power via MQTT")
+                logger.error("SenseMe client not initialized")
         else:
             logger.warning(f"Invalid light power value from MQTT: {payload}")
     except Exception as e:
-        logger.error(f"Error handling MQTT light power command: {e}")
+        logger.error(f"Error handling MQTT light power command: {e}", exc_info=True)
 
 
 def handle_mqtt_light_level(payload: str):
@@ -193,18 +226,24 @@ def handle_mqtt_light_level(payload: str):
         level = int(payload)
         if 0 <= level <= 16:
             logger.info(f"MQTT command: Set light level to {level}")
-            if senseme_client and senseme_client.set_light_level(level):
-                state = update_state_and_publish("light_level", senseme_client.get_light_level)
-                if state is not None:
-                    logger.info(f"Light level set to {state} via MQTT")
+            if senseme_client:
+                success = senseme_client.set_light_level(level)
+                if success:
+                    state = update_state_and_publish("light_level", senseme_client.get_light_level)
+                    if state is not None:
+                        logger.info(f"Light level set to {state} via MQTT")
+                    else:
+                        logger.error("Failed to read light level state after setting via MQTT")
+                else:
+                    logger.error(f"Failed to set light level to {level} via MQTT - command returned False")
             else:
-                logger.error("Failed to set light level via MQTT")
+                logger.error("SenseMe client not initialized")
         else:
             logger.warning(f"Invalid light level value from MQTT: {payload} (must be 0-16)")
     except ValueError:
         logger.warning(f"Invalid light level format from MQTT: {payload}")
     except Exception as e:
-        logger.error(f"Error handling MQTT light level command: {e}")
+        logger.error(f"Error handling MQTT light level command: {e}", exc_info=True)
 
 
 @asynccontextmanager
@@ -263,12 +302,15 @@ async def lifespan(app: FastAPI):
         mqtt_publisher.disconnect()
 
 
-# Create FastAPI app
+# Create FastAPI app with custom docs URLs
 app = FastAPI(
     title="Haiku Fan MQTT Bridge",
     description="REST API and MQTT bridge for BigAssFan Haiku fans",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/api/docs",
+    redoc_url=None,  # We'll create a custom ReDoc route
+    openapi_url="/api/openapi.json"
 )
 
 # Add CORS middleware
@@ -279,6 +321,33 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Custom ReDoc route with proper HTML and asset paths
+@app.get("/api/redoc", response_class=HTMLResponse, include_in_schema=False)
+async def custom_redoc():
+    """Custom ReDoc documentation page with proper asset loading."""
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Haiku Fan MQTT Bridge - ReDoc</title>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
+        <style>
+            body {{
+                margin: 0;
+                padding: 0;
+            }}
+        </style>
+    </head>
+    <body>
+        <redoc spec-url="/api/openapi.json"></redoc>
+        <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+    </body>
+    </html>
+    """
 
 
 # Pydantic models
@@ -299,9 +368,13 @@ class LightLevelRequest(BaseModel):
 
 
 # API Routes
-@app.get("/")
+@app.get("/", tags=["General"])
 async def root():
-    """Root endpoint."""
+    """
+    Root endpoint - Service information.
+    
+    Returns basic information about the service including name, version, and status.
+    """
     return {
         "service": "Haiku Fan MQTT Bridge",
         "version": "1.0.0",
@@ -309,9 +382,19 @@ async def root():
     }
 
 
-@app.get("/health")
+@app.get("/api/health", tags=["General"])
 async def health():
-    """Health check endpoint."""
+    """
+    Health check endpoint.
+    
+    Check the health status of the service including:
+    - Overall service status
+    - Fan connection status (connected/disconnected)
+    - MQTT broker connection status (if configured)
+    
+    Returns:
+        dict: Health status with connection states
+    """
     return {
         "status": "healthy",
         "fan_connected": senseme_client.connected if senseme_client else False,
@@ -319,18 +402,43 @@ async def health():
     }
 
 
-@app.get("/api/fan/state")
+@app.get("/api/fan/state", tags=["Fan"])
 async def get_fan_state():
-    """Get current fan state."""
+    """
+    Get complete fan state.
+    
+    Returns all current fan states including:
+    - name: Fan name
+    - power: Fan power state (ON/OFF)
+    - speed: Fan speed (0-7, where 0=OFF)
+    - light_power: Light power state (ON/OFF)
+    - light_level: Light brightness level (0-16)
+    
+    Returns:
+        dict: Complete fan state
+        
+    Raises:
+        HTTPException: 503 if fan states are not yet available
+    """
     with fan_states_lock:
         if not fan_states:
             raise HTTPException(status_code=503, detail="Fan states not yet available")
         return fan_states.copy()  # Return a copy to avoid concurrent modification
 
 
-@app.get("/api/fan/power")
+@app.get("/api/fan/power", tags=["Fan"])
 async def get_fan_power():
-    """Get fan power state."""
+    """
+    Get fan power state.
+    
+    Returns the current power state of the fan (ON or OFF).
+    
+    Returns:
+        dict: {"power": "ON"|"OFF"}
+        
+    Raises:
+        HTTPException: 503 if unable to get fan power state
+    """
     if not senseme_client:
         raise HTTPException(status_code=503, detail="SenseMe client not initialized")
     
@@ -341,9 +449,23 @@ async def get_fan_power():
     return {"power": power}
 
 
-@app.post("/api/fan/power")
+@app.post("/api/fan/power", tags=["Fan"])
 async def set_fan_power(request: PowerRequest):
-    """Set fan power state."""
+    """
+    Set fan power state.
+    
+    Turn the fan ON or OFF.
+    
+    Args:
+        request: PowerRequest with state field ("ON" or "OFF")
+        
+    Returns:
+        dict: {"success": true, "power": "ON"|"OFF"}
+        
+    Raises:
+        HTTPException: 503 if SenseMe client not initialized
+        HTTPException: 500 if failed to set fan power
+    """
     if not senseme_client:
         raise HTTPException(status_code=503, detail="SenseMe client not initialized")
     
@@ -363,9 +485,19 @@ async def set_fan_power(request: PowerRequest):
         raise HTTPException(status_code=500, detail="Failed to set fan power")
 
 
-@app.get("/api/fan/speed")
+@app.get("/api/fan/speed", tags=["Fan"])
 async def get_fan_speed():
-    """Get fan speed."""
+    """
+    Get fan speed.
+    
+    Returns the current fan speed (0-7, where 0 means fan is OFF).
+    
+    Returns:
+        dict: {"speed": 0-7}
+        
+    Raises:
+        HTTPException: 503 if unable to get fan speed
+    """
     if not senseme_client:
         raise HTTPException(status_code=503, detail="SenseMe client not initialized")
     
@@ -376,9 +508,24 @@ async def get_fan_speed():
     return {"speed": speed}
 
 
-@app.post("/api/fan/speed")
+@app.post("/api/fan/speed", tags=["Fan"])
 async def set_fan_speed(request: SpeedRequest):
-    """Set fan speed."""
+    """
+    Set fan speed.
+    
+    Set the fan speed to a value between 0 and 7.
+    Note: Setting speed to 0 turns the fan OFF.
+    
+    Args:
+        request: SpeedRequest with speed field (0-7)
+        
+    Returns:
+        dict: {"success": true, "speed": 0-7}
+        
+    Raises:
+        HTTPException: 503 if SenseMe client not initialized
+        HTTPException: 500 if failed to set fan speed
+    """
     if not senseme_client:
         raise HTTPException(status_code=503, detail="SenseMe client not initialized")
     
@@ -398,9 +545,19 @@ async def set_fan_speed(request: SpeedRequest):
         raise HTTPException(status_code=500, detail="Failed to set fan speed")
 
 
-@app.get("/api/light/power")
+@app.get("/api/light/power", tags=["Light"])
 async def get_light_power():
-    """Get light power state."""
+    """
+    Get light power state.
+    
+    Returns the current power state of the light (ON or OFF).
+    
+    Returns:
+        dict: {"power": "ON"|"OFF"}
+        
+    Raises:
+        HTTPException: 503 if unable to get light power state
+    """
     if not senseme_client:
         raise HTTPException(status_code=503, detail="SenseMe client not initialized")
     
@@ -411,9 +568,27 @@ async def get_light_power():
     return {"power": power}
 
 
-@app.post("/api/light/power")
+@app.post("/api/light/power", tags=["Light"])
 async def set_light_power(request: LightPowerRequest):
-    """Set light power state."""
+    """
+    Set light power state.
+    
+    Turn the light ON or OFF.
+    - When turning ON: Light is set to level 2 (default brightness)
+    - When turning OFF: Light level is set to 0
+    
+    Both light_power and light_level states are published to MQTT when changed.
+    
+    Args:
+        request: LightPowerRequest with state field ("ON" or "OFF")
+        
+    Returns:
+        dict: {"success": true, "power": "ON"|"OFF"}
+        
+    Raises:
+        HTTPException: 503 if SenseMe client not initialized
+        HTTPException: 500 if failed to set light power
+    """
     if not senseme_client:
         raise HTTPException(status_code=503, detail="SenseMe client not initialized")
     
@@ -421,21 +596,34 @@ async def set_light_power(request: LightPowerRequest):
         # Update state immediately
         time.sleep(1)
         power = senseme_client.get_light_power()
+        level = senseme_client.get_light_level()
         
         # Update cached fan_states immediately for responsive UI (thread-safe)
         with fan_states_lock:
             fan_states["light_power"] = power
+            fan_states["light_level"] = level
         
         if mqtt_publisher and mqtt_publisher.connected:
             mqtt_publisher.publish_state("light_power", power)
+            mqtt_publisher.publish_state("light_level", level)
         return {"success": True, "power": request.state}
     else:
         raise HTTPException(status_code=500, detail="Failed to set light power")
 
 
-@app.get("/api/light/level")
+@app.get("/api/light/level", tags=["Light"])
 async def get_light_level():
-    """Get light brightness level."""
+    """
+    Get light brightness level.
+    
+    Returns the current brightness level of the light (0-16).
+    
+    Returns:
+        dict: {"level": 0-16}
+        
+    Raises:
+        HTTPException: 503 if unable to get light level
+    """
     if not senseme_client:
         raise HTTPException(status_code=503, detail="SenseMe client not initialized")
     
@@ -446,9 +634,24 @@ async def get_light_level():
     return {"level": level}
 
 
-@app.post("/api/light/level")
+@app.post("/api/light/level", tags=["Light"])
 async def set_light_level(request: LightLevelRequest):
-    """Set light brightness level."""
+    """
+    Set light brightness level.
+    
+    Set the light brightness to a value between 0 and 16.
+    Note: Setting level to 0 turns the light OFF.
+    
+    Args:
+        request: LightLevelRequest with level field (0-16)
+        
+    Returns:
+        dict: {"success": true, "level": 0-16}
+        
+    Raises:
+        HTTPException: 503 if SenseMe client not initialized
+        HTTPException: 500 if failed to set light level
+    """
     if not senseme_client:
         raise HTTPException(status_code=503, detail="SenseMe client not initialized")
     
