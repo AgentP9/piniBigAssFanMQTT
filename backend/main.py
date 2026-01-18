@@ -26,6 +26,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Custom filter to exclude health check and state polling endpoints from access logs
+class EndpointFilter(logging.Filter):
+    """Filter out access logs for specific endpoints to reduce log spam."""
+    def filter(self, record: logging.LogRecord) -> bool:
+        # Exclude /health and /api/fan/state from access logs
+        return not any(endpoint in record.getMessage() for endpoint in ["/health", "/api/fan/state"])
+
+# Apply filter to uvicorn access logger
+logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
+
 # Configuration from environment variables
 FAN_IP = os.getenv("FAN_IP", "192.168.1.100")
 FAN_NAME = os.getenv("FAN_NAME", "")  # Optional: Fan name, will be discovered if not set
