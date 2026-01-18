@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
@@ -308,7 +309,7 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
     docs_url="/api/docs",
-    redoc_url="/api/redoc",
+    redoc_url=None,  # We'll create a custom ReDoc route
     openapi_url="/api/openapi.json"
 )
 
@@ -320,6 +321,33 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Custom ReDoc route with proper HTML and asset paths
+@app.get("/api/redoc", response_class=HTMLResponse, include_in_schema=False)
+async def custom_redoc():
+    """Custom ReDoc documentation page with proper asset loading."""
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Haiku Fan MQTT Bridge - ReDoc</title>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
+        <style>
+            body {{
+                margin: 0;
+                padding: 0;
+            }}
+        </style>
+    </head>
+    <body>
+        <redoc spec-url="/api/openapi.json"></redoc>
+        <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+    </body>
+    </html>
+    """
 
 
 # Pydantic models
