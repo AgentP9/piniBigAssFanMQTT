@@ -6,6 +6,27 @@ The fan wasn't reacting to OpenHAB commands because of a value range mismatch. O
 - **Fan speed**: 0-7 (not 0-100)
 - **Light level**: 0-16 (not 0-100)
 
+## MQTT Behavior
+
+### Light Power and Level Relationship
+When controlling the light via power switch:
+- **ON**: Sets light level to 2 and publishes both `light_power=ON` and `light_level=2`
+- **OFF**: Sets light level to 0 and publishes both `light_power=OFF` and `light_level=0`
+
+### MQTT Flow
+When commands are received on `/set` topics, the bridge:
+1. Executes the command on the fan
+2. Reads back the current state from the fan
+3. Publishes the new state to the status topic(s)
+
+**Example:**
+```
+Publish: haiku_fan/light_power/set = ON
+→ Bridge sets light to level 2
+→ Bridge publishes: haiku_fan/light_power = ON
+→ Bridge publishes: haiku_fan/light_level = 2
+```
+
 ## Solution
 
 Configure OpenHAB to send raw values instead of percentages. You have two options:
