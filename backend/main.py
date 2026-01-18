@@ -90,9 +90,20 @@ def update_state_and_publish(state_key: str, get_state_func):
             with fan_states_lock:
                 fan_states[state_key] = state_value
             
-            # Publish to MQTT
+            # Publish to MQTT (with percentage conversion for speed and light_level)
             if mqtt_publisher and mqtt_publisher.connected:
-                mqtt_publisher.publish_state(state_key, state_value)
+                if state_key == "speed":
+                    # Publish as percentage for dimmer compatibility
+                    speed_pct = round(state_value * 100 / 7)
+                    mqtt_publisher.publish_state("speed", speed_pct)
+                    mqtt_publisher.publish_state("speed_raw", state_value)
+                elif state_key == "light_level":
+                    # Publish as percentage for dimmer compatibility
+                    light_level_pct = round(state_value * 100 / 16)
+                    mqtt_publisher.publish_state("light_level", light_level_pct)
+                    mqtt_publisher.publish_state("light_level_raw", state_value)
+                else:
+                    mqtt_publisher.publish_state(state_key, state_value)
             
             return state_value
         else:
@@ -132,15 +143,28 @@ def handle_mqtt_fan_speed(payload: str):
     """Handle MQTT command for fan speed.
     
     Args:
-        payload: MQTT message payload. Expected values: "0" to "7" as string
+        payload: MQTT message payload. Expected values: 
+                 - "0" to "7" as raw speed values, OR
+                 - "0" to "100" as percentage (will be converted to 0-7)
     
     On success, updates the cached fan state and publishes the new state to MQTT status topic.
     Logs warnings for out-of-range values or invalid formats, and errors if the command fails.
     """
     try:
-        speed = int(payload)
-        if 0 <= speed <= 7:
+        value = int(payload)
+        
+        # Convert percentage (0-100) to raw speed (0-7) if value is > 7
+        # This allows compatibility with OpenHAB dimmers that send percentage values
+        if value > 7:
+            # Treat as percentage and convert to 0-7 range
+            speed = round(value * 7 / 100)
+            logger.info(f"MQTT command: Converting {value}% to fan speed {speed}")
+        else:
+            # Treat as raw speed value
+            speed = value
             logger.info(f"MQTT command: Set fan speed to {speed}")
+        
+        if 0 <= speed <= 7:
             if senseme_client and senseme_client.set_fan_speed(speed):
                 state = update_state_and_publish("speed", senseme_client.get_fan_speed)
                 if state is not None:
@@ -148,7 +172,7 @@ def handle_mqtt_fan_speed(payload: str):
             else:
                 logger.error("Failed to set fan speed via MQTT")
         else:
-            logger.warning(f"Invalid fan speed value from MQTT: {payload} (must be 0-7)")
+            logger.warning(f"Invalid fan speed value from MQTT: {payload} (converted to {speed}, must be 0-7)")
     except ValueError:
         logger.warning(f"Invalid fan speed format from MQTT: {payload}")
     except Exception as e:
@@ -184,15 +208,28 @@ def handle_mqtt_light_level(payload: str):
     """Handle MQTT command for light level.
     
     Args:
-        payload: MQTT message payload. Expected values: "0" to "16" as string
+        payload: MQTT message payload. Expected values:
+                 - "0" to "16" as raw brightness values, OR
+                 - "0" to "100" as percentage (will be converted to 0-16)
     
     On success, updates the cached light state and publishes the new state to MQTT status topic.
     Logs warnings for out-of-range values or invalid formats, and errors if the command fails.
     """
     try:
-        level = int(payload)
-        if 0 <= level <= 16:
+        value = int(payload)
+        
+        # Convert percentage (0-100) to raw level (0-16) if value is > 16
+        # This allows compatibility with OpenHAB dimmers that send percentage values
+        if value > 16:
+            # Treat as percentage and convert to 0-16 range
+            level = round(value * 16 / 100)
+            logger.info(f"MQTT command: Converting {value}% to light level {level}")
+        else:
+            # Treat as raw level value
+            level = value
             logger.info(f"MQTT command: Set light level to {level}")
+        
+        if 0 <= level <= 16:
             if senseme_client and senseme_client.set_light_level(level):
                 state = update_state_and_publish("light_level", senseme_client.get_light_level)
                 if state is not None:
@@ -200,7 +237,7 @@ def handle_mqtt_light_level(payload: str):
             else:
                 logger.error("Failed to set light level via MQTT")
         else:
-            logger.warning(f"Invalid light level value from MQTT: {payload} (must be 0-16)")
+            logger.warning(f"Invalid light level value from MQTT: {payload} (converted to {level}, must be 0-16)")
     except ValueError:
         logger.warning(f"Invalid light level format from MQTT: {payload}")
     except Exception as e:
@@ -392,7 +429,9 @@ async def set_fan_speed(request: SpeedRequest):
             fan_states["speed"] = speed
         
         if mqtt_publisher and mqtt_publisher.connected:
-            mqtt_publisher.publish_state("speed", speed)
+            speed_pct = round(speed * 100 / 7)
+            mqtt_publisher.publish_state("speed", speed_pct)
+            mqtt_publisher.publish_state("speed_raw", speed)
         return {"success": True, "speed": request.speed}
     else:
         raise HTTPException(status_code=500, detail="Failed to set fan speed")
@@ -462,7 +501,9 @@ async def set_light_level(request: LightLevelRequest):
             fan_states["light_level"] = level
         
         if mqtt_publisher and mqtt_publisher.connected:
-            mqtt_publisher.publish_state("light_level", level)
+            light_level_pct = round(level * 100 / 16)
+            mqtt_publisher.publish_state("light_level", light_level_pct)
+            mqtt_publisher.publish_state("light_level_raw", level)
         return {"success": True, "level": request.level}
     else:
         raise HTTPException(status_code=500, detail="Failed to set light level")
