@@ -116,16 +116,22 @@ def handle_mqtt_fan_power(payload: str):
         payload_upper = payload.upper()
         if payload_upper in ["ON", "OFF"]:
             logger.info(f"MQTT command: Set fan power to {payload_upper}")
-            if senseme_client and senseme_client.set_fan_power(payload_upper):
-                state = update_state_and_publish("power", senseme_client.get_fan_power)
-                if state:
-                    logger.info(f"Fan power set to {state} via MQTT")
+            if senseme_client:
+                success = senseme_client.set_fan_power(payload_upper)
+                if success:
+                    state = update_state_and_publish("power", senseme_client.get_fan_power)
+                    if state:
+                        logger.info(f"Fan power set to {state} via MQTT")
+                    else:
+                        logger.error("Failed to read fan power state after setting via MQTT")
+                else:
+                    logger.error(f"Failed to set fan power to {payload_upper} via MQTT - command returned False")
             else:
-                logger.error("Failed to set fan power via MQTT")
+                logger.error("SenseMe client not initialized")
         else:
             logger.warning(f"Invalid fan power value from MQTT: {payload}")
     except Exception as e:
-        logger.error(f"Error handling MQTT fan power command: {e}")
+        logger.error(f"Error handling MQTT fan power command: {e}", exc_info=True)
 
 
 def handle_mqtt_fan_speed(payload: str):
@@ -141,18 +147,24 @@ def handle_mqtt_fan_speed(payload: str):
         speed = int(payload)
         if 0 <= speed <= 7:
             logger.info(f"MQTT command: Set fan speed to {speed}")
-            if senseme_client and senseme_client.set_fan_speed(speed):
-                state = update_state_and_publish("speed", senseme_client.get_fan_speed)
-                if state is not None:
-                    logger.info(f"Fan speed set to {state} via MQTT")
+            if senseme_client:
+                success = senseme_client.set_fan_speed(speed)
+                if success:
+                    state = update_state_and_publish("speed", senseme_client.get_fan_speed)
+                    if state is not None:
+                        logger.info(f"Fan speed set to {state} via MQTT")
+                    else:
+                        logger.error("Failed to read fan speed state after setting via MQTT")
+                else:
+                    logger.error(f"Failed to set fan speed to {speed} via MQTT - command returned False")
             else:
-                logger.error("Failed to set fan speed via MQTT")
+                logger.error("SenseMe client not initialized")
         else:
             logger.warning(f"Invalid fan speed value from MQTT: {payload} (must be 0-7)")
     except ValueError:
         logger.warning(f"Invalid fan speed format from MQTT: {payload}")
     except Exception as e:
-        logger.error(f"Error handling MQTT fan speed command: {e}")
+        logger.error(f"Error handling MQTT fan speed command: {e}", exc_info=True)
 
 
 def handle_mqtt_light_power(payload: str):
@@ -169,19 +181,25 @@ def handle_mqtt_light_power(payload: str):
         payload_upper = payload.upper()
         if payload_upper in ["ON", "OFF"]:
             logger.info(f"MQTT command: Set light power to {payload_upper}")
-            if senseme_client and senseme_client.set_light_power(payload_upper):
-                # Update and publish light power state
-                power_state = update_state_and_publish("light_power", senseme_client.get_light_power)
-                # Also update and publish light level since it changes with power
-                level_state = update_state_and_publish("light_level", senseme_client.get_light_level)
-                if power_state:
-                    logger.info(f"Light power set to {power_state} via MQTT (level: {level_state})")
+            if senseme_client:
+                success = senseme_client.set_light_power(payload_upper)
+                if success:
+                    # Update and publish light power state
+                    power_state = update_state_and_publish("light_power", senseme_client.get_light_power)
+                    # Also update and publish light level since it changes with power
+                    level_state = update_state_and_publish("light_level", senseme_client.get_light_level)
+                    if power_state:
+                        logger.info(f"Light power set to {power_state} via MQTT (level: {level_state})")
+                    else:
+                        logger.error("Failed to read light power state after setting via MQTT")
+                else:
+                    logger.error(f"Failed to set light power to {payload_upper} via MQTT - command returned False")
             else:
-                logger.error("Failed to set light power via MQTT")
+                logger.error("SenseMe client not initialized")
         else:
             logger.warning(f"Invalid light power value from MQTT: {payload}")
     except Exception as e:
-        logger.error(f"Error handling MQTT light power command: {e}")
+        logger.error(f"Error handling MQTT light power command: {e}", exc_info=True)
 
 
 def handle_mqtt_light_level(payload: str):
@@ -197,18 +215,24 @@ def handle_mqtt_light_level(payload: str):
         level = int(payload)
         if 0 <= level <= 16:
             logger.info(f"MQTT command: Set light level to {level}")
-            if senseme_client and senseme_client.set_light_level(level):
-                state = update_state_and_publish("light_level", senseme_client.get_light_level)
-                if state is not None:
-                    logger.info(f"Light level set to {state} via MQTT")
+            if senseme_client:
+                success = senseme_client.set_light_level(level)
+                if success:
+                    state = update_state_and_publish("light_level", senseme_client.get_light_level)
+                    if state is not None:
+                        logger.info(f"Light level set to {state} via MQTT")
+                    else:
+                        logger.error("Failed to read light level state after setting via MQTT")
+                else:
+                    logger.error(f"Failed to set light level to {level} via MQTT - command returned False")
             else:
-                logger.error("Failed to set light level via MQTT")
+                logger.error("SenseMe client not initialized")
         else:
             logger.warning(f"Invalid light level value from MQTT: {payload} (must be 0-16)")
     except ValueError:
         logger.warning(f"Invalid light level format from MQTT: {payload}")
     except Exception as e:
-        logger.error(f"Error handling MQTT light level command: {e}")
+        logger.error(f"Error handling MQTT light level command: {e}", exc_info=True)
 
 
 @asynccontextmanager
