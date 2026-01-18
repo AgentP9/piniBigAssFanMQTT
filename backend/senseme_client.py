@@ -122,8 +122,9 @@ class SenseMeClient:
                 except socket.timeout:
                     logger.warning(f"Command timeout (attempt {attempt + 1}/{retries}): {command}")
                     if attempt < retries - 1:
-                        # Wait before retry with exponential backoff
-                        time.sleep(0.5 * (attempt + 1))
+                        # Wait before retry with exponential backoff: 0.5s, 1.0s, 1.5s
+                        backoff_delay = 0.5 * (attempt + 1)
+                        time.sleep(backoff_delay)
                         continue
                     else:
                         logger.error(f"Command failed after {retries} attempts: {command}")
@@ -132,7 +133,9 @@ class SenseMeClient:
                 except Exception as e:
                     logger.error(f"Error sending command '{command}' (attempt {attempt + 1}/{retries}): {e}")
                     if attempt < retries - 1:
-                        time.sleep(0.5 * (attempt + 1))
+                        # Wait before retry with exponential backoff: 0.5s, 1.0s, 1.5s
+                        backoff_delay = 0.5 * (attempt + 1)
+                        time.sleep(backoff_delay)
                         continue
                     else:
                         self.disconnect()
