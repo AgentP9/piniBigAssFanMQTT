@@ -6,6 +6,8 @@ import json
 import logging
 from typing import Dict, Any, Optional, Callable
 
+from mqtt_utils import raw_to_percentage_speed, raw_to_percentage_light
+
 logger = logging.getLogger(__name__)
 
 
@@ -104,13 +106,13 @@ class MQTTPublisher:
                 if value is not None:
                     if key == "speed":
                         # Publish as percentage for dimmer compatibility
-                        speed_pct = round(value * 100 / 7)
+                        speed_pct = raw_to_percentage_speed(value)
                         self.publish_state("speed", speed_pct)
                         # Also publish raw value for direct access
                         self.publish_state("speed_raw", value)
                     elif key == "light_level":
                         # Publish as percentage for dimmer compatibility
-                        light_level_pct = round(value * 100 / 16)
+                        light_level_pct = raw_to_percentage_light(value)
                         self.publish_state("light_level", light_level_pct)
                         # Also publish raw value for direct access
                         self.publish_state("light_level_raw", value)

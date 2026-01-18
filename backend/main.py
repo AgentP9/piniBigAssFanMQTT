@@ -15,6 +15,12 @@ from dotenv import load_dotenv
 
 from senseme_client import SenseMeClient
 from mqtt_client import MQTTPublisher
+from mqtt_utils import (
+    percentage_to_raw_speed,
+    percentage_to_raw_light,
+    raw_to_percentage_speed,
+    raw_to_percentage_light
+)
 
 # Load environment variables
 load_dotenv()
@@ -94,12 +100,12 @@ def update_state_and_publish(state_key: str, get_state_func):
             if mqtt_publisher and mqtt_publisher.connected:
                 if state_key == "speed":
                     # Publish as percentage for dimmer compatibility
-                    speed_pct = round(state_value * 100 / 7)
+                    speed_pct = raw_to_percentage_speed(state_value)
                     mqtt_publisher.publish_state("speed", speed_pct)
                     mqtt_publisher.publish_state("speed_raw", state_value)
                 elif state_key == "light_level":
                     # Publish as percentage for dimmer compatibility
-                    light_level_pct = round(state_value * 100 / 16)
+                    light_level_pct = raw_to_percentage_light(state_value)
                     mqtt_publisher.publish_state("light_level", light_level_pct)
                     mqtt_publisher.publish_state("light_level_raw", state_value)
                 else:
@@ -157,7 +163,7 @@ def handle_mqtt_fan_speed(payload: str):
         # This allows compatibility with OpenHAB dimmers that send percentage values
         if value > 7:
             # Treat as percentage and convert to 0-7 range
-            speed = round(value * 7 / 100)
+            speed = percentage_to_raw_speed(value)
             logger.info(f"MQTT command: Converting {value}% to fan speed {speed}")
         else:
             # Treat as raw speed value
@@ -222,7 +228,7 @@ def handle_mqtt_light_level(payload: str):
         # This allows compatibility with OpenHAB dimmers that send percentage values
         if value > 16:
             # Treat as percentage and convert to 0-16 range
-            level = round(value * 16 / 100)
+            level = percentage_to_raw_light(value)
             logger.info(f"MQTT command: Converting {value}% to light level {level}")
         else:
             # Treat as raw level value
@@ -429,7 +435,7 @@ async def set_fan_speed(request: SpeedRequest):
             fan_states["speed"] = speed
         
         if mqtt_publisher and mqtt_publisher.connected:
-            speed_pct = round(speed * 100 / 7)
+            speed_pct = raw_to_percentage_speed(speed)
             mqtt_publisher.publish_state("speed", speed_pct)
             mqtt_publisher.publish_state("speed_raw", speed)
         return {"success": True, "speed": request.speed}
@@ -501,7 +507,7 @@ async def set_light_level(request: LightLevelRequest):
             fan_states["light_level"] = level
         
         if mqtt_publisher and mqtt_publisher.connected:
-            light_level_pct = round(level * 100 / 16)
+            light_level_pct = raw_to_percentage_light(level)
             mqtt_publisher.publish_state("light_level", light_level_pct)
             mqtt_publisher.publish_state("light_level_raw", level)
         return {"success": True, "level": request.level}
