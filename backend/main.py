@@ -70,6 +70,39 @@ def poll_fan_states():
     logger.info("Stopped fan state polling thread")
 
 
+def update_state_and_publish(state_key: str, get_state_func):
+    """Helper function to update cached state and publish to MQTT after a command.
+    
+    Args:
+        state_key: Key in fan_states dict (e.g., 'power', 'speed')
+        get_state_func: Function to call to get the current state from the fan
+    """
+    try:
+        # Allow fan time to process the command
+        time.sleep(1)
+        
+        # Get the current state from the fan
+        state_value = get_state_func()
+        
+        # Only update and publish if we got a valid value
+        if state_value is not None:
+            # Update cached state (thread-safe)
+            with fan_states_lock:
+                fan_states[state_key] = state_value
+            
+            # Publish to MQTT
+            if mqtt_publisher and mqtt_publisher.connected:
+                mqtt_publisher.publish_state(state_key, state_value)
+            
+            return state_value
+        else:
+            logger.warning(f"Failed to get {state_key} state after command")
+            return None
+    except Exception as e:
+        logger.error(f"Error updating {state_key} state: {e}")
+        return None
+
+
 def handle_mqtt_fan_power(payload: str):
     """Handle MQTT command for fan power."""
     try:
@@ -77,14 +110,9 @@ def handle_mqtt_fan_power(payload: str):
         if payload_upper in ["ON", "OFF"]:
             logger.info(f"MQTT command: Set fan power to {payload_upper}")
             if senseme_client and senseme_client.set_fan_power(payload_upper):
-                # Update state immediately and publish
-                time.sleep(1)
-                power = senseme_client.get_fan_power()
-                with fan_states_lock:
-                    fan_states["power"] = power
-                if mqtt_publisher and mqtt_publisher.connected:
-                    mqtt_publisher.publish_state("power", power)
-                logger.info(f"Fan power set to {power} via MQTT")
+                state = update_state_and_publish("power", senseme_client.get_fan_power)
+                if state:
+                    logger.info(f"Fan power set to {state} via MQTT")
             else:
                 logger.error("Failed to set fan power via MQTT")
         else:
@@ -100,14 +128,9 @@ def handle_mqtt_fan_speed(payload: str):
         if 0 <= speed <= 7:
             logger.info(f"MQTT command: Set fan speed to {speed}")
             if senseme_client and senseme_client.set_fan_speed(speed):
-                # Update state immediately and publish
-                time.sleep(1)
-                actual_speed = senseme_client.get_fan_speed()
-                with fan_states_lock:
-                    fan_states["speed"] = actual_speed
-                if mqtt_publisher and mqtt_publisher.connected:
-                    mqtt_publisher.publish_state("speed", actual_speed)
-                logger.info(f"Fan speed set to {actual_speed} via MQTT")
+                state = update_state_and_publish("speed", senseme_client.get_fan_speed)
+                if state is not None:
+                    logger.info(f"Fan speed set to {state} via MQTT")
             else:
                 logger.error("Failed to set fan speed via MQTT")
         else:
@@ -125,14 +148,9 @@ def handle_mqtt_light_power(payload: str):
         if payload_upper in ["ON", "OFF"]:
             logger.info(f"MQTT command: Set light power to {payload_upper}")
             if senseme_client and senseme_client.set_light_power(payload_upper):
-                # Update state immediately and publish
-                time.sleep(1)
-                power = senseme_client.get_light_power()
-                with fan_states_lock:
-                    fan_states["light_power"] = power
-                if mqtt_publisher and mqtt_publisher.connected:
-                    mqtt_publisher.publish_state("light_power", power)
-                logger.info(f"Light power set to {power} via MQTT")
+                state = update_state_and_publish("light_power", senseme_client.get_light_power)
+                if state:
+                    logger.info(f"Light power set to {state} via MQTT")
             else:
                 logger.error("Failed to set light power via MQTT")
         else:
@@ -148,14 +166,9 @@ def handle_mqtt_light_level(payload: str):
         if 0 <= level <= 16:
             logger.info(f"MQTT command: Set light level to {level}")
             if senseme_client and senseme_client.set_light_level(level):
-                # Update state immediately and publish
-                time.sleep(1)
-                actual_level = senseme_client.get_light_level()
-                with fan_states_lock:
-                    fan_states["light_level"] = actual_level
-                if mqtt_publisher and mqtt_publisher.connected:
-                    mqtt_publisher.publish_state("light_level", actual_level)
-                logger.info(f"Light level set to {actual_level} via MQTT")
+                state = update_state_and_publish("light_level", senseme_client.get_light_level)
+                if state is not None:
+                    logger.info(f"Light level set to {state} via MQTT")
             else:
                 logger.error("Failed to set light level via MQTT")
         else:
