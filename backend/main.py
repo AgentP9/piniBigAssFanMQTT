@@ -162,6 +162,7 @@ def handle_mqtt_light_power(payload: str):
         payload: MQTT message payload. Expected values: "ON" or "OFF" (case-insensitive)
     
     On success, updates the cached light state and publishes the new state to MQTT status topic.
+    Also publishes the light_level since power changes affect the level (ON=2, OFF=0).
     Logs warnings for invalid payloads and errors if the command fails.
     """
     try:
@@ -169,9 +170,12 @@ def handle_mqtt_light_power(payload: str):
         if payload_upper in ["ON", "OFF"]:
             logger.info(f"MQTT command: Set light power to {payload_upper}")
             if senseme_client and senseme_client.set_light_power(payload_upper):
-                state = update_state_and_publish("light_power", senseme_client.get_light_power)
-                if state:
-                    logger.info(f"Light power set to {state} via MQTT")
+                # Update and publish light power state
+                power_state = update_state_and_publish("light_power", senseme_client.get_light_power)
+                # Also update and publish light level since it changes with power
+                level_state = update_state_and_publish("light_level", senseme_client.get_light_level)
+                if power_state:
+                    logger.info(f"Light power set to {power_state} via MQTT (level: {level_state})")
             else:
                 logger.error("Failed to set light power via MQTT")
         else:
@@ -421,13 +425,16 @@ async def set_light_power(request: LightPowerRequest):
         # Update state immediately
         time.sleep(1)
         power = senseme_client.get_light_power()
+        level = senseme_client.get_light_level()
         
         # Update cached fan_states immediately for responsive UI (thread-safe)
         with fan_states_lock:
             fan_states["light_power"] = power
+            fan_states["light_level"] = level
         
         if mqtt_publisher and mqtt_publisher.connected:
             mqtt_publisher.publish_state("light_power", power)
+            mqtt_publisher.publish_state("light_level", level)
         return {"success": True, "power": request.state}
     else:
         raise HTTPException(status_code=500, detail="Failed to set light power")
