@@ -6,8 +6,6 @@ import json
 import logging
 from typing import Dict, Any, Optional, Callable
 
-from mqtt_utils import raw_to_percentage_speed, raw_to_percentage_light
-
 logger = logging.getLogger(__name__)
 
 
@@ -88,37 +86,16 @@ class MQTTPublisher:
             return False
     
     def publish_all_states(self, states: Dict[str, Any]) -> bool:
-        """Publish all fan states to MQTT.
-        
-        Publishes values in both raw and percentage formats:
-        - speed: Published as percentage (0-100) for dimmer compatibility
-        - speed_raw: Published as raw value (0-7) for direct control
-        - light_level: Published as percentage (0-100) for dimmer compatibility
-        - light_level_raw: Published as raw value (0-16) for direct control
-        """
+        """Publish all fan states to MQTT."""
         if not self.connected:
             logger.warning("Not connected to MQTT broker")
             return False
         
         try:
-            # Publish states, converting numeric values to percentages for dimmer compatibility
+            # Publish individual states
             for key, value in states.items():
                 if value is not None:
-                    if key == "speed":
-                        # Publish as percentage for dimmer compatibility
-                        speed_pct = raw_to_percentage_speed(value)
-                        self.publish_state("speed", speed_pct)
-                        # Also publish raw value for direct access
-                        self.publish_state("speed_raw", value)
-                    elif key == "light_level":
-                        # Publish as percentage for dimmer compatibility
-                        light_level_pct = raw_to_percentage_light(value)
-                        self.publish_state("light_level", light_level_pct)
-                        # Also publish raw value for direct access
-                        self.publish_state("light_level_raw", value)
-                    else:
-                        # Publish other values as-is
-                        self.publish_state(key, value)
+                    self.publish_state(key, value)
             
             # Also publish all states as a single JSON message
             self.publish_state("state", states)

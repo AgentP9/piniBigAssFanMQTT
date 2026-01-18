@@ -145,25 +145,19 @@ The service publishes fan states to the following MQTT topics:
 
 - `haiku_fan/name` - Fan name
 - `haiku_fan/power` - Fan power state (ON/OFF)
-- `haiku_fan/speed` - Fan speed as percentage (0-100) - for dimmer compatibility
-- `haiku_fan/speed_raw` - Fan speed raw value (0-7)
+- `haiku_fan/speed` - Fan speed (0-7)
 - `haiku_fan/light_power` - Light power state (ON/OFF)
-- `haiku_fan/light_level` - Light brightness as percentage (0-100) - for dimmer compatibility
-- `haiku_fan/light_level_raw` - Light brightness raw value (0-16)
+- `haiku_fan/light_level` - Light brightness level (0-16)
 - `haiku_fan/state` - All states as JSON
-
-**Note**: The `speed` and `light_level` topics publish percentage values (0-100) for compatibility with home automation platforms like OpenHAB and Home Assistant that use dimmers. If you need raw values, use the `_raw` suffixed topics.
 
 ### Command Topics (Subscribed by the service)
 
 You can control the fan by publishing messages to these command topics:
 
 - `haiku_fan/power/set` - Set fan power (payload: `ON` or `OFF`)
-- `haiku_fan/speed/set` - Set fan speed (payload: `0` to `7` for raw, or `0` to `100` for percentage)
+- `haiku_fan/speed/set` - Set fan speed (payload: `0` to `7`)
 - `haiku_fan/light_power/set` - Set light power (payload: `ON` or `OFF`)
-- `haiku_fan/light_level/set` - Set light brightness (payload: `0` to `16` for raw, or `0` to `100` for percentage)
-
-**Note**: The `speed/set` and `light_level/set` topics accept both raw values and percentage values. Values > 7 for speed or > 16 for light level are automatically interpreted as percentages and converted to the appropriate raw value. This allows seamless integration with OpenHAB dimmers and similar controllers.
+- `haiku_fan/light_level/set` - Set light brightness (payload: `0` to `16`)
 
 #### Examples
 
@@ -172,14 +166,9 @@ Turn fan on:
 mosquitto_pub -h localhost -t "haiku_fan/power/set" -m "ON"
 ```
 
-Set fan speed to 5 (raw value):
+Set fan speed to 5:
 ```bash
 mosquitto_pub -h localhost -t "haiku_fan/speed/set" -m "5"
-```
-
-Set fan speed to 50% (percentage):
-```bash
-mosquitto_pub -h localhost -t "haiku_fan/speed/set" -m "50"
 ```
 
 Turn light on:
@@ -187,37 +176,10 @@ Turn light on:
 mosquitto_pub -h localhost -t "haiku_fan/light_power/set" -m "ON"
 ```
 
-Set light brightness to 10 (raw value):
+Set light brightness to 10:
 ```bash
 mosquitto_pub -h localhost -t "haiku_fan/light_level/set" -m "10"
 ```
-
-Set light brightness to 75% (percentage):
-```bash
-mosquitto_pub -h localhost -t "haiku_fan/light_level/set" -m "75"
-```
-
-### OpenHAB Integration
-
-For OpenHAB, configure your items with dimmers that send percentage values:
-
-**things:**
-```
-Type switch : mqtt_bigassfan_power     "BigAssFan Power"       [ stateTopic="haiku_fan/power", commandTopic="haiku_fan/power/set" ]
-Type dimmer : mqtt_bigassfan_speed     "BigAssFan Speed"       [ stateTopic="haiku_fan/speed", commandTopic="haiku_fan/speed/set" ]
-Type switch : mqtt_bigassfan_lightpwr  "BigAssFan Light Power" [ stateTopic="haiku_fan/light_power", commandTopic="haiku_fan/light_power/set" ]
-Type dimmer : mqtt_bigassfan_light     "BigAssFan Light Level" [ stateTopic="haiku_fan/light_level", commandTopic="haiku_fan/light_level/set" ]
-```
-
-**items:**
-```
-Switch BigAssFan_Power       "BigAssFan Power"       { channel="mqtt:topic:oha21b14:mqtt_bigassfan_power" }
-Dimmer BigAssFan_Speed       "BigAssFan Speed"       { channel="mqtt:topic:oha21b14:mqtt_bigassfan_speed" }
-Switch BigAssFan_LightPower  "BigAssFan Light Power" { channel="mqtt:topic:oha21b14:mqtt_bigassfan_lightpwr" }
-Dimmer BigAssFan_Light       "BigAssFan Light"       { channel="mqtt:topic:oha21b14:mqtt_bigassfan_light" }
-```
-
-The service automatically converts between percentage values (0-100) from OpenHAB dimmers and the raw values (0-7 for speed, 0-16 for light) required by the fan.
 
 ## SenseMe Protocol
 
