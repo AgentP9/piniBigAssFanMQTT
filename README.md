@@ -139,14 +139,47 @@ Configure these variables in your `.env` file or through Portainer:
 
 ## MQTT Topics
 
+### Status Topics (Published by the service)
+
 The service publishes fan states to the following MQTT topics:
 
 - `haiku_fan/name` - Fan name
-- `haiku_fan/power` - Fan power state
+- `haiku_fan/power` - Fan power state (ON/OFF)
 - `haiku_fan/speed` - Fan speed (0-7)
-- `haiku_fan/light_power` - Light power state
+- `haiku_fan/light_power` - Light power state (ON/OFF)
 - `haiku_fan/light_level` - Light brightness level (0-16)
 - `haiku_fan/state` - All states as JSON
+
+### Command Topics (Subscribed by the service)
+
+You can control the fan by publishing messages to these command topics:
+
+- `haiku_fan/power/set` - Set fan power (payload: `ON` or `OFF`)
+- `haiku_fan/speed/set` - Set fan speed (payload: `0` to `7`)
+- `haiku_fan/light_power/set` - Set light power (payload: `ON` or `OFF`)
+- `haiku_fan/light_level/set` - Set light brightness (payload: `0` to `16`)
+
+#### Examples
+
+Turn fan on:
+```bash
+mosquitto_pub -h localhost -t "haiku_fan/power/set" -m "ON"
+```
+
+Set fan speed to 5:
+```bash
+mosquitto_pub -h localhost -t "haiku_fan/speed/set" -m "5"
+```
+
+Turn light on:
+```bash
+mosquitto_pub -h localhost -t "haiku_fan/light_power/set" -m "ON"
+```
+
+Set light brightness to 10:
+```bash
+mosquitto_pub -h localhost -t "haiku_fan/light_level/set" -m "10"
+```
 
 ## SenseMe Protocol
 

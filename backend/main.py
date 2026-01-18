@@ -70,6 +70,102 @@ def poll_fan_states():
     logger.info("Stopped fan state polling thread")
 
 
+def handle_mqtt_fan_power(payload: str):
+    """Handle MQTT command for fan power."""
+    try:
+        payload_upper = payload.upper()
+        if payload_upper in ["ON", "OFF"]:
+            logger.info(f"MQTT command: Set fan power to {payload_upper}")
+            if senseme_client and senseme_client.set_fan_power(payload_upper):
+                # Update state immediately and publish
+                time.sleep(1)
+                power = senseme_client.get_fan_power()
+                with fan_states_lock:
+                    fan_states["power"] = power
+                if mqtt_publisher and mqtt_publisher.connected:
+                    mqtt_publisher.publish_state("power", power)
+                logger.info(f"Fan power set to {power} via MQTT")
+            else:
+                logger.error("Failed to set fan power via MQTT")
+        else:
+            logger.warning(f"Invalid fan power value from MQTT: {payload}")
+    except Exception as e:
+        logger.error(f"Error handling MQTT fan power command: {e}")
+
+
+def handle_mqtt_fan_speed(payload: str):
+    """Handle MQTT command for fan speed."""
+    try:
+        speed = int(payload)
+        if 0 <= speed <= 7:
+            logger.info(f"MQTT command: Set fan speed to {speed}")
+            if senseme_client and senseme_client.set_fan_speed(speed):
+                # Update state immediately and publish
+                time.sleep(1)
+                actual_speed = senseme_client.get_fan_speed()
+                with fan_states_lock:
+                    fan_states["speed"] = actual_speed
+                if mqtt_publisher and mqtt_publisher.connected:
+                    mqtt_publisher.publish_state("speed", actual_speed)
+                logger.info(f"Fan speed set to {actual_speed} via MQTT")
+            else:
+                logger.error("Failed to set fan speed via MQTT")
+        else:
+            logger.warning(f"Invalid fan speed value from MQTT: {payload} (must be 0-7)")
+    except ValueError:
+        logger.warning(f"Invalid fan speed format from MQTT: {payload}")
+    except Exception as e:
+        logger.error(f"Error handling MQTT fan speed command: {e}")
+
+
+def handle_mqtt_light_power(payload: str):
+    """Handle MQTT command for light power."""
+    try:
+        payload_upper = payload.upper()
+        if payload_upper in ["ON", "OFF"]:
+            logger.info(f"MQTT command: Set light power to {payload_upper}")
+            if senseme_client and senseme_client.set_light_power(payload_upper):
+                # Update state immediately and publish
+                time.sleep(1)
+                power = senseme_client.get_light_power()
+                with fan_states_lock:
+                    fan_states["light_power"] = power
+                if mqtt_publisher and mqtt_publisher.connected:
+                    mqtt_publisher.publish_state("light_power", power)
+                logger.info(f"Light power set to {power} via MQTT")
+            else:
+                logger.error("Failed to set light power via MQTT")
+        else:
+            logger.warning(f"Invalid light power value from MQTT: {payload}")
+    except Exception as e:
+        logger.error(f"Error handling MQTT light power command: {e}")
+
+
+def handle_mqtt_light_level(payload: str):
+    """Handle MQTT command for light level."""
+    try:
+        level = int(payload)
+        if 0 <= level <= 16:
+            logger.info(f"MQTT command: Set light level to {level}")
+            if senseme_client and senseme_client.set_light_level(level):
+                # Update state immediately and publish
+                time.sleep(1)
+                actual_level = senseme_client.get_light_level()
+                with fan_states_lock:
+                    fan_states["light_level"] = actual_level
+                if mqtt_publisher and mqtt_publisher.connected:
+                    mqtt_publisher.publish_state("light_level", actual_level)
+                logger.info(f"Light level set to {actual_level} via MQTT")
+            else:
+                logger.error("Failed to set light level via MQTT")
+        else:
+            logger.warning(f"Invalid light level value from MQTT: {payload} (must be 0-16)")
+    except ValueError:
+        logger.warning(f"Invalid light level format from MQTT: {payload}")
+    except Exception as e:
+        logger.error(f"Error handling MQTT light level command: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
@@ -95,6 +191,13 @@ async def lifespan(app: FastAPI):
             logger.info("MQTT Authentication: Disabled")
         mqtt_publisher = MQTTPublisher(MQTT_BROKER, MQTT_PORT, username=MQTT_USER or None, password=MQTT_PASS or None)
         mqtt_publisher.connect()
+        
+        # Register MQTT command callbacks
+        mqtt_publisher.register_command_callback('power', handle_mqtt_fan_power)
+        mqtt_publisher.register_command_callback('speed', handle_mqtt_fan_speed)
+        mqtt_publisher.register_command_callback('light_power', handle_mqtt_light_power)
+        mqtt_publisher.register_command_callback('light_level', handle_mqtt_light_level)
+        logger.info("Registered MQTT command callbacks")
     else:
         logger.info("MQTT Broker not configured - MQTT publishing disabled")
         mqtt_publisher = None
