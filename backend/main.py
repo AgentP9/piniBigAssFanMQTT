@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 class EndpointFilter(logging.Filter):
     """Filter out access logs for specific endpoints to reduce log spam."""
     def filter(self, record: logging.LogRecord) -> bool:
-        # Exclude /health and /api/fan/state from access logs
-        return not any(endpoint in record.getMessage() for endpoint in ["/health", "/api/fan/state"])
+        # Exclude /api/health and /api/fan/state from access logs
+        return not any(endpoint in record.getMessage() for endpoint in ["/api/health", "/api/fan/state"])
 
 # Apply filter to uvicorn access logger
 logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
@@ -301,12 +301,15 @@ async def lifespan(app: FastAPI):
         mqtt_publisher.disconnect()
 
 
-# Create FastAPI app
+# Create FastAPI app with custom docs URLs
 app = FastAPI(
     title="Haiku Fan MQTT Bridge",
     description="REST API and MQTT bridge for BigAssFan Haiku fans",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json"
 )
 
 # Add CORS middleware
@@ -351,7 +354,7 @@ async def root():
     }
 
 
-@app.get("/health", tags=["General"])
+@app.get("/api/health", tags=["General"])
 async def health():
     """
     Health check endpoint.

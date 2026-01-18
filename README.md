@@ -123,7 +123,7 @@ Configure these variables in your `.env` file or through Portainer:
 
 ### Interactive API Documentation (Swagger UI)
 
-Access the interactive API documentation at: **`http://localhost:1919/docs`**
+Access the interactive API documentation at: **`http://localhost:1919/api/docs`**
 
 The Swagger UI provides:
 - Complete list of all API endpoints
@@ -132,13 +132,13 @@ The Swagger UI provides:
 - Detailed parameter descriptions and validation rules
 
 Alternative documentation formats:
-- **ReDoc**: `http://localhost:1919/redoc` - Alternative API documentation interface
-- **OpenAPI JSON**: `http://localhost:1919/openapi.json` - Raw OpenAPI specification
+- **ReDoc**: `http://localhost:1919/api/redoc` - Alternative API documentation interface
+- **OpenAPI JSON**: `http://localhost:1919/api/openapi.json` - Raw OpenAPI specification
 
 ### API Endpoints Summary
 
 #### Health Check
-- `GET /health` - Check service health and connection status
+- `GET /api/health` - Check service health and connection status
 
 #### Fan State
 - `GET /api/fan/state` - Get all fan states (name, power, speed, light_power, light_level)
