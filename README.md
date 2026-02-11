@@ -203,8 +203,83 @@ mosquitto_pub -h localhost -t "haiku_fan/light_level/set" -m "10"
 
 ## SenseMe Protocol
 
-This project uses the SenseMe protocol for communicating with Haiku fans. The protocol is documented at:
+This project uses the SenseMe protocol for communicating with Haiku fans, based on the reverse engineering work documented by Bruce Pennypacker at:
 https://bruce.pennypacker.org/2015/07/17/hacking-bigass-fans-with-senseme/
+
+### Protocol Overview
+
+The SenseMe protocol is a simple, plaintext UDP-based protocol used by BigAssFan's Haiku fans for communication and control.
+
+**Key Findings:**
+
+- **Transport**: UDP datagrams on port **31415**
+- **Format**: Simple ASCII text messages
+- **Discovery**: Supports network broadcast for device discovery
+- **Bidirectional**: Fans can send status updates and receive commands
+
+### Message Format
+
+**Commands** (sent to fan):
+```
+<FanName;COMMAND;PARAMETERS>
+```
+
+**Responses** (received from fan):
+```
+(FanName;COMMAND;PARAMETERS)
+```
+
+### Common Commands
+
+**Fan Control:**
+```bash
+# Get fan power state
+<Master Bedroom;FAN;PWR;GET;ACTUAL>
+Response: (Master Bedroom;FAN;PWR;OFF)
+
+# Set fan power
+<Master Bedroom;FAN;PWR;ON>
+
+# Set fan speed (0-7)
+<Master Bedroom;FAN;SPD;SET;5>
+```
+
+**Light Control:**
+```bash
+# Get light level
+<Master Bedroom;LIGHT;LEVEL;GET;ACTUAL>
+Response: (Master Bedroom;LIGHT;LEVEL;ACTUAL;10)
+
+# Set light level (0-16)
+<Master Bedroom;LIGHT;LEVEL;SET;12>
+```
+
+**Device Discovery:**
+```bash
+# Broadcast discovery
+<ALL;DEVICE;ID;GET>
+Response: (FanName;DEVICE;ID;MAC_ADDRESS)
+```
+
+### Protocol Characteristics
+
+1. **Stateless**: Each command is independent
+2. **No Authentication**: Protocol has no built-in security
+3. **Broadcast Updates**: Fan broadcasts state changes to all listening devices on the network
+4. **Synchronization**: Multiple devices stay synchronized through UDP broadcasts
+5. **Simple Parsing**: Semicolon-delimited fields make parsing straightforward
+
+### Important Notes
+
+- This protocol works with older Haiku and SenseMe-enabled fans
+- Newer BigAssFan models may use different protocols
+- No official API documentation exists - all information from reverse engineering
+- The protocol allows both fan name and MAC address as device identifiers
+
+### References
+
+- Bruce Pennypacker's original work: https://bruce.pennypacker.org/category/haiku/
+- Community implementations available on GitHub for various platforms
 
 ## Ports
 
