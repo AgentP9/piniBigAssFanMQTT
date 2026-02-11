@@ -52,7 +52,7 @@ This project provides a REST API and MQTT bridge for BigAssFan Haiku fans using 
 
 4. Start the services:
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
 5. Access the web interface at: `http://localhost:1919`
@@ -67,7 +67,7 @@ After accessing the web interface, you can install it as a Progressive Web App o
 - **Android**: Open in Chrome, tap Menu → Install app
 - **Desktop**: Look for the install icon in your browser's address bar
 
-For detailed PWA installation instructions, see [PWA.md](PWA.md).
+The app works offline and provides a native-like experience on mobile devices with fullscreen mode, custom icons, and fast loading from cached assets.
 
 ### Running Without MQTT
 
@@ -203,8 +203,83 @@ mosquitto_pub -h localhost -t "haiku_fan/light_level/set" -m "10"
 
 ## SenseMe Protocol
 
-This project uses the SenseMe protocol for communicating with Haiku fans. The protocol is documented at:
+This project uses the SenseMe protocol for communicating with Haiku fans, based on the reverse engineering work documented by Bruce Pennypacker at:
 https://bruce.pennypacker.org/2015/07/17/hacking-bigass-fans-with-senseme/
+
+### Protocol Overview
+
+The SenseMe protocol is a simple, plaintext UDP-based protocol used by BigAssFan's Haiku fans for communication and control.
+
+**Key Findings:**
+
+- **Transport**: UDP datagrams on port **31415**
+- **Format**: Simple ASCII text messages
+- **Discovery**: Supports network broadcast for device discovery
+- **Bidirectional**: Fans can send status updates and receive commands
+
+### Message Format
+
+**Commands** (sent to fan):
+```
+<FanName;COMMAND;PARAMETERS>
+```
+
+**Responses** (received from fan):
+```
+(FanName;COMMAND;PARAMETERS)
+```
+
+### Common Commands
+
+**Fan Control:**
+```bash
+# Get fan power state
+<Master Bedroom;FAN;PWR;GET;ACTUAL>
+Response: (Master Bedroom;FAN;PWR;OFF)
+
+# Set fan power
+<Master Bedroom;FAN;PWR;ON>
+
+# Set fan speed (0-7)
+<Master Bedroom;FAN;SPD;SET;5>
+```
+
+**Light Control:**
+```bash
+# Get light level
+<Master Bedroom;LIGHT;LEVEL;GET;ACTUAL>
+Response: (Master Bedroom;LIGHT;LEVEL;ACTUAL;10)
+
+# Set light level (0-16)
+<Master Bedroom;LIGHT;LEVEL;SET;12>
+```
+
+**Device Discovery:**
+```bash
+# Broadcast discovery
+<ALL;DEVICE;ID;GET>
+Response: (FanName;DEVICE;ID;MAC_ADDRESS)
+```
+
+### Protocol Characteristics
+
+1. **Stateless**: Each command is independent
+2. **No Authentication**: Protocol has no built-in security
+3. **Broadcast Updates**: Fan broadcasts state changes to all listening devices on the network
+4. **Synchronization**: Multiple devices stay synchronized through UDP broadcasts
+5. **Simple Parsing**: Semicolon-delimited fields make parsing straightforward
+
+### Important Notes
+
+- This protocol works with older Haiku and SenseMe-enabled fans
+- Newer BigAssFan models may use different protocols
+- No official API documentation exists - all information from reverse engineering
+- The protocol allows both fan name and MAC address as device identifiers
+
+### References
+
+- Bruce Pennypacker's original work: https://bruce.pennypacker.org/category/haiku/
+- Community implementations available on GitHub for various platforms
 
 ## Ports
 
@@ -212,6 +287,106 @@ https://bruce.pennypacker.org/2015/07/17/hacking-bigass-fans-with-senseme/
 - `8000`: Backend API (internal to Docker network)
 - `1883`: MQTT broker
 - `9001`: MQTT websocket (optional)
+
+## Testing
+
+### Without a Physical Fan
+
+You can test the application structure without a physical fan:
+
+```bash
+# Set a dummy fan IP
+echo "FAN_IP=192.168.1.100" > .env
+echo "MQTT_BROKER=mosquitto" >> .env
+
+# Start services
+docker compose up -d
+
+# Check service health
+curl http://localhost:8000/health
+# Response: {"status":"healthy","fan_connected":false,"mqtt_connected":true}
+```
+
+### With a Physical Fan
+
+1. Find your fan's IP address (check your router's DHCP client list)
+
+2. Configure environment:
+   ```bash
+   echo "FAN_IP=<your-fan-ip>" > .env
+   echo "MQTT_BROKER=mosquitto" >> .env
+   ```
+
+3. Start services and verify connection:
+   ```bash
+   docker compose up -d
+   curl http://localhost:8000/health
+   # Response: {"status":"healthy","fan_connected":true,"mqtt_connected":true}
+   ```
+
+4. Test API endpoints:
+   ```bash
+   # Get fan state
+   curl http://localhost:8000/api/fan/state
+   
+   # Turn fan on
+   curl -X POST http://localhost:8000/api/fan/power \
+     -H "Content-Type: application/json" \
+     -d '{"state":"ON"}'
+   ```
+
+5. Test MQTT:
+   ```bash
+   # Subscribe to status updates
+   mosquitto_sub -h localhost -t "haiku_fan/#" -v
+   
+   # Send commands
+   mosquitto_pub -h localhost -t "haiku_fan/power/set" -m "ON"
+   ```
+
+## Troubleshooting
+
+### Fan Won't Connect
+
+**Symptom**: `fan_connected: false` in health check
+
+**Solutions**:
+- Verify the fan IP address is correct in `.env`
+- Ensure the fan is on the same network or reachable from Docker
+- Check that port 31415 (UDP) is not blocked by firewalls
+- Verify the fan supports the SenseMe protocol (older Haiku models)
+
+### MQTT Commands Not Working
+
+**Symptom**: Fan doesn't respond to MQTT `/set` commands
+
+**Solutions**:
+- Check backend logs: `docker compose logs backend`
+- Verify MQTT topics match exactly (case-sensitive)
+- Ensure values are in correct range:
+  - Fan speed: 0-7 (not 0-100)
+  - Light level: 0-16 (not 0-100)
+
+### Web Interface Not Loading
+
+**Symptom**: Cannot access http://localhost:1919
+
+**Solutions**:
+- Check frontend container is running: `docker compose ps frontend`
+- Check nginx logs: `docker compose logs frontend`
+- Verify port 1919 is not in use by another service
+
+### View Logs
+
+```bash
+# All services
+docker compose logs -f
+
+# Specific service
+docker compose logs -f backend
+docker compose logs -f frontend
+docker compose logs -f mosquitto
+```
 
 ## License
 
