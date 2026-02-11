@@ -52,7 +52,7 @@ This project provides a REST API and MQTT bridge for BigAssFan Haiku fans using 
 
 4. Start the services:
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
 5. Access the web interface at: `http://localhost:1919`
@@ -225,7 +225,7 @@ echo "FAN_IP=192.168.1.100" > .env
 echo "MQTT_BROKER=mosquitto" >> .env
 
 # Start services
-docker-compose up -d
+docker compose up -d
 
 # Check service health
 curl http://localhost:8000/health
@@ -244,9 +244,9 @@ curl http://localhost:8000/health
 
 3. Start services and verify connection:
    ```bash
-   docker-compose up -d
+   docker compose up -d
    curl http://localhost:8000/health
-   # Should show fan_connected: true
+   # Response: {"status":"healthy","fan_connected":true,"mqtt_connected":true}
    ```
 
 4. Test API endpoints:
@@ -286,43 +286,32 @@ curl http://localhost:8000/health
 **Symptom**: Fan doesn't respond to MQTT `/set` commands
 
 **Solutions**:
-- Check backend logs: `docker-compose logs backend`
+- Check backend logs: `docker compose logs backend`
 - Verify MQTT topics match exactly (case-sensitive)
 - Ensure values are in correct range:
   - Fan speed: 0-7 (not 0-100)
   - Light level: 0-16 (not 0-100)
-- For OpenHAB integration, see [OPENHAB_CONFIG.md](OPENHAB_CONFIG.md)
 
 ### Web Interface Not Loading
 
 **Symptom**: Cannot access http://localhost:1919
 
 **Solutions**:
-- Check frontend container is running: `docker-compose ps frontend`
-- Check nginx logs: `docker-compose logs frontend`
+- Check frontend container is running: `docker compose ps frontend`
+- Check nginx logs: `docker compose logs frontend`
 - Verify port 1919 is not in use by another service
 
 ### View Logs
 
 ```bash
 # All services
-docker-compose logs -f
+docker compose logs -f
 
 # Specific service
-docker-compose logs -f backend
-docker-compose logs -f frontend
-docker-compose logs -f mosquitto
+docker compose logs -f backend
+docker compose logs -f frontend
+docker compose logs -f mosquitto
 ```
-
-## Advanced Deployment
-
-For deploying with Portainer, see [PORTAINER.md](PORTAINER.md) for a comprehensive guide including:
-- Git repository deployment
-- Environment variable configuration
-- Network considerations
-- Updating and monitoring
-
-For OpenHAB integration with proper value ranges and configuration, see [OPENHAB_CONFIG.md](OPENHAB_CONFIG.md).
 
 ## License
 
