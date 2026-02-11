@@ -312,6 +312,6 @@ Consider adding:
 ## Support
 
 For issues or questions:
-- Check the [TESTING.md](TESTING.md) document
+- Check the Testing and Troubleshooting sections in [README.md](README.md)
 - Review logs in Portainer
 - Open an issue on GitHub

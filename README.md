@@ -67,7 +67,7 @@ After accessing the web interface, you can install it as a Progressive Web App o
 - **Android**: Open in Chrome, tap Menu → Install app
 - **Desktop**: Look for the install icon in your browser's address bar
 
-For detailed PWA installation instructions, see [PWA.md](PWA.md).
+The app works offline and provides a native-like experience on mobile devices with fullscreen mode, custom icons, and fast loading from cached assets.
 
 ### Running Without MQTT
 
@@ -212,6 +212,117 @@ https://bruce.pennypacker.org/2015/07/17/hacking-bigass-fans-with-senseme/
 - `8000`: Backend API (internal to Docker network)
 - `1883`: MQTT broker
 - `9001`: MQTT websocket (optional)
+
+## Testing
+
+### Without a Physical Fan
+
+You can test the application structure without a physical fan:
+
+```bash
+# Set a dummy fan IP
+echo "FAN_IP=192.168.1.100" > .env
+echo "MQTT_BROKER=mosquitto" >> .env
+
+# Start services
+docker-compose up -d
+
+# Check service health
+curl http://localhost:8000/health
+# Response: {"status":"healthy","fan_connected":false,"mqtt_connected":true}
+```
+
+### With a Physical Fan
+
+1. Find your fan's IP address (check your router's DHCP client list)
+
+2. Configure environment:
+   ```bash
+   echo "FAN_IP=<your-fan-ip>" > .env
+   echo "MQTT_BROKER=mosquitto" >> .env
+   ```
+
+3. Start services and verify connection:
+   ```bash
+   docker-compose up -d
+   curl http://localhost:8000/health
+   # Should show fan_connected: true
+   ```
+
+4. Test API endpoints:
+   ```bash
+   # Get fan state
+   curl http://localhost:8000/api/fan/state
+   
+   # Turn fan on
+   curl -X POST http://localhost:8000/api/fan/power \
+     -H "Content-Type: application/json" \
+     -d '{"state":"ON"}'
+   ```
+
+5. Test MQTT:
+   ```bash
+   # Subscribe to status updates
+   mosquitto_sub -h localhost -t "haiku_fan/#" -v
+   
+   # Send commands
+   mosquitto_pub -h localhost -t "haiku_fan/power/set" -m "ON"
+   ```
+
+## Troubleshooting
+
+### Fan Won't Connect
+
+**Symptom**: `fan_connected: false` in health check
+
+**Solutions**:
+- Verify the fan IP address is correct in `.env`
+- Ensure the fan is on the same network or reachable from Docker
+- Check that port 31415 (UDP) is not blocked by firewalls
+- Verify the fan supports the SenseMe protocol (older Haiku models)
+
+### MQTT Commands Not Working
+
+**Symptom**: Fan doesn't respond to MQTT `/set` commands
+
+**Solutions**:
+- Check backend logs: `docker-compose logs backend`
+- Verify MQTT topics match exactly (case-sensitive)
+- Ensure values are in correct range:
+  - Fan speed: 0-7 (not 0-100)
+  - Light level: 0-16 (not 0-100)
+- For OpenHAB integration, see [OPENHAB_CONFIG.md](OPENHAB_CONFIG.md)
+
+### Web Interface Not Loading
+
+**Symptom**: Cannot access http://localhost:1919
+
+**Solutions**:
+- Check frontend container is running: `docker-compose ps frontend`
+- Check nginx logs: `docker-compose logs frontend`
+- Verify port 1919 is not in use by another service
+
+### View Logs
+
+```bash
+# All services
+docker-compose logs -f
+
+# Specific service
+docker-compose logs -f backend
+docker-compose logs -f frontend
+docker-compose logs -f mosquitto
+```
+
+## Advanced Deployment
+
+For deploying with Portainer, see [PORTAINER.md](PORTAINER.md) for a comprehensive guide including:
+- Git repository deployment
+- Environment variable configuration
+- Network considerations
+- Updating and monitoring
+
+For OpenHAB integration with proper value ranges and configuration, see [OPENHAB_CONFIG.md](OPENHAB_CONFIG.md).
 
 ## License
 
